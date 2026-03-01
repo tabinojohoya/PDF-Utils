@@ -19,8 +19,27 @@ struct ContentView: View {
             if viewModel.isEmpty {
                 emptyStateView
             } else {
-                Text("ファイル追加済み: \(viewModel.pdfItems.count)件")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                NavigationSplitView {
+                    PDFListView()
+                } detail: {
+                    // Step 8 で PDFPreviewView に置換
+                    if let item = viewModel.selectedItem {
+                        VStack {
+                            Text(item.fileName)
+                                .font(.title3)
+                                .fontWeight(.medium)
+                            Text("\(item.pageCount)ページ · \(item.formattedFileSize)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        Text("PDFを選択してプレビュー")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
             }
         }
         .frame(minWidth: 600, minHeight: 400)
