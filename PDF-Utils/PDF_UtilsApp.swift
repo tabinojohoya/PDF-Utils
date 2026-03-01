@@ -6,27 +6,17 @@
 //
 
 import SwiftUI
-import SwiftData
 
 @main
 struct PDF_UtilsApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @State private var viewModel = PDFMergeViewModel()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(viewModel)
         }
-        .modelContainer(sharedModelContainer)
+        .defaultSize(width: 960, height: 640)
+        .windowResizability(.contentMinSize)
     }
 }
