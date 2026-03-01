@@ -20,6 +20,7 @@ struct PDFListRowView: View {
                 .frame(width: 44, height: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 2))
                 .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
+                .accessibilityHidden(true)
 
             // ファイル情報
             VStack(alignment: .leading, spacing: 3) {
@@ -40,5 +41,6 @@ struct PDFListRowView: View {
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(item.fileName)、\(item.pageCount)ページ、\(item.formattedFileSize)")
+        .accessibilityHint("ドラッグで並び替え可能")
     }
 }

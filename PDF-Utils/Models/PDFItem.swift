@@ -48,7 +48,7 @@ struct PDFItem: Identifiable, Hashable {
         // ファイルサイズ取得
         let fileSize: Int64
         do {
-            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path(percentEncoded: false))
             fileSize = attributes[.size] as? Int64 ?? 0
         } catch {
             fileSize = 0
@@ -82,28 +82,25 @@ struct PDFItem: Identifiable, Hashable {
             thumbnailSize.height / pageRect.height
         )
 
-        let image = NSImage(size: thumbnailSize)
-        image.lockFocus()
-
-        // 背景を白で塗る
-        NSColor.white.setFill()
-        NSRect(origin: .zero, size: thumbnailSize).fill()
-
-        // ページを描画
         let scaledWidth = pageRect.width * scale
         let scaledHeight = pageRect.height * scale
         let offsetX = (thumbnailSize.width - scaledWidth) / 2
         let offsetY = (thumbnailSize.height - scaledHeight) / 2
 
-        if let context = NSGraphicsContext.current?.cgContext {
+        let image = NSImage(size: thumbnailSize, flipped: false) { _ in
+            // 背景を白で塗る
+            NSColor.white.setFill()
+            NSRect(origin: .zero, size: thumbnailSize).fill()
+
+            // ページを描画
+            guard let context = NSGraphicsContext.current?.cgContext else { return false }
             context.saveGState()
             context.translateBy(x: offsetX, y: offsetY)
             context.scaleBy(x: scale, y: scale)
             page.draw(with: .mediaBox, to: context)
             context.restoreGState()
+            return true
         }
-
-        image.unlockFocus()
         return image
     }
 

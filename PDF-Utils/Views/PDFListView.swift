@@ -18,6 +18,16 @@ struct PDFListView: View {
             ForEach(viewModel.pdfItems) { item in
                 PDFListRowView(item: item)
                     .tag(item.id)
+                    .accessibilityAction(named: "上に移動") {
+                        if let index = viewModel.pdfItems.firstIndex(where: { $0.id == item.id }), index > 0 {
+                            viewModel.moveItems(from: IndexSet(integer: index), to: index - 1)
+                        }
+                    }
+                    .accessibilityAction(named: "下に移動") {
+                        if let index = viewModel.pdfItems.firstIndex(where: { $0.id == item.id }), index < viewModel.pdfItems.count - 1 {
+                            viewModel.moveItems(from: IndexSet(integer: index), to: index + 2)
+                        }
+                    }
             }
             .onMove { source, destination in
                 viewModel.moveItems(from: source, to: destination)
@@ -27,5 +37,6 @@ struct PDFListView: View {
         .onDeleteCommand {
             viewModel.removeSelectedItem()
         }
+        .accessibilityLabel("PDFファイル一覧")
     }
 }

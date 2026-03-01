@@ -17,54 +17,57 @@ enum PDFMergeService {
     ///   - outputURL: 保存先URL
     ///   - progress: 進捗コールバック (0.0〜1.0)
     /// - Throws: PDFMergeError
-    static func merge(
+    nonisolated static func merge(
         urls: [URL],
         to outputURL: URL,
-        progress: @Sendable (Double) -> Void
+        progress: @escaping @Sendable (Double) -> Void
     ) async throws {
-        guard !urls.isEmpty else {
-            throw PDFMergeError.noFiles
-        }
-
-        // 全ファイルの合計ページ数を先に計算（進捗計算用）
-        let documents: [(url: URL, document: PDFDocument)] = try urls.map { url in
-            guard let doc = PDFDocument(url: url) else {
-                throw PDFMergeError.fileNotReadable(url)
+        // 重い処理をバックグラウンドスレッドで実行
+        try await Task.detached(priority: .userInitiated) {
+            guard !urls.isEmpty else {
+                throw PDFMergeError.noFiles
             }
-            if doc.isLocked {
-                throw PDFMergeError.passwordProtected(url)
+
+            // 全ファイルの合計ページ数を先に計算（進捗計算用）
+            let documents: [(url: URL, document: PDFDocument)] = try urls.map { url in
+                guard let doc = PDFDocument(url: url) else {
+                    throw PDFMergeError.fileNotReadable(url)
+                }
+                if doc.isLocked {
+                    throw PDFMergeError.passwordProtected(url)
+                }
+                return (url, doc)
             }
-            return (url, doc)
-        }
 
-        let totalPages = documents.reduce(0) { $0 + $1.document.pageCount }
-        guard totalPages > 0 else {
-            throw PDFMergeError.noFiles
-        }
-
-        // 結合処理（バックグラウンドで実行）
-        let outputDocument = PDFDocument()
-        var insertedPages = 0
-
-        for (_, document) in documents {
-            for pageIndex in 0..<document.pageCount {
-                guard let page = document.page(at: pageIndex) else { continue }
-
-                outputDocument.insert(page, at: outputDocument.pageCount)
-                insertedPages += 1
-
-                // 進捗を報告
-                let currentProgress = Double(insertedPages) / Double(totalPages)
-                progress(currentProgress)
+            let totalPages = documents.reduce(0) { $0 + $1.document.pageCount }
+            guard totalPages > 0 else {
+                throw PDFMergeError.noFiles
             }
-        }
 
-        // ファイルに書き出し
-        guard outputDocument.write(to: outputURL) else {
-            throw PDFMergeError.writeFailed(outputURL)
-        }
+            // 結合処理（バックグラウンドで実行）
+            let outputDocument = PDFDocument()
+            var insertedPages = 0
 
-        progress(1.0)
+            for (_, document) in documents {
+                for pageIndex in 0..<document.pageCount {
+                    guard let page = document.page(at: pageIndex) else { continue }
+
+                    outputDocument.insert(page, at: outputDocument.pageCount)
+                    insertedPages += 1
+
+                    // 進捗を報告
+                    let currentProgress = Double(insertedPages) / Double(totalPages)
+                    progress(currentProgress)
+                }
+            }
+
+            // ファイルに書き出し
+            guard outputDocument.write(to: outputURL) else {
+                throw PDFMergeError.writeFailed(outputURL)
+            }
+
+            progress(1.0)
+        }.value
     }
 }
 

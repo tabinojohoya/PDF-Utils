@@ -68,9 +68,16 @@ final class PDFMergeViewModel {
     /// PDFファイルを追加する
     /// - Parameter urls: 追加するPDFファイルのURL配列
     func addFiles(urls: [URL]) {
+        // 結合中は追加を受け付けない
+        guard !isMerging else { return }
+
+        var errors: [String] = []
+        var skippedDuplicates = 0
+
         for url in urls {
             // 重複チェック（同一URLは追加しない）
             guard !pdfItems.contains(where: { $0.url == url }) else {
+                skippedDuplicates += 1
                 continue
             }
 
@@ -80,8 +87,15 @@ final class PDFMergeViewModel {
                     pdfItems.append(item)
                 }
             } catch {
-                alertMessage = error.localizedDescription
+                errors.append(error.localizedDescription)
             }
+        }
+
+        // エラーがあれば一括通知
+        if !errors.isEmpty {
+            alertMessage = errors.joined(separator: "\n")
+        } else if skippedDuplicates > 0 && urls.count == skippedDuplicates {
+            alertMessage = "選択されたファイルはすべて追加済みです。"
         }
 
         // 追加後、最初のアイテムが未選択なら自動選択
@@ -93,11 +107,18 @@ final class PDFMergeViewModel {
     /// 指定したIDのアイテムをリストから削除する
     /// - Parameter ids: 削除するアイテムのID集合
     func removeItems(ids: Set<PDFItem.ID>) {
+        guard !isMerging else { return }
+
+        // 削除対象のセキュリティスコープを解放
+        for item in pdfItems where ids.contains(item.id) {
+            item.url.stopAccessingSecurityScopedResource()
+        }
+
         withAnimation(.easeOut(duration: 0.25)) {
             pdfItems.removeAll { ids.contains($0.id) }
         }
 
-        // 選択中のアイテムが削除された場合、選択をリセット
+        // 選択中のアイテムが削除された場合、次のアイテムまたは先頭を選択
         if let selectedID = selectedItemID, ids.contains(selectedID) {
             selectedItemID = pdfItems.first?.id
         }
@@ -111,6 +132,13 @@ final class PDFMergeViewModel {
 
     /// リストを全件クリアする
     func clearAll() {
+        guard !isMerging else { return }
+
+        // 全アイテムのセキュリティスコープを解放
+        for item in pdfItems {
+            item.url.stopAccessingSecurityScopedResource()
+        }
+
         withAnimation(.easeOut(duration: 0.25)) {
             pdfItems.removeAll()
             selectedItemID = nil
@@ -122,6 +150,8 @@ final class PDFMergeViewModel {
     ///   - source: 移動元のインデックス
     ///   - destination: 移動先のインデックス
     func moveItems(from source: IndexSet, to destination: Int) {
+        guard !isMerging else { return }
+
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             pdfItems.move(fromOffsets: source, toOffset: destination)
         }
@@ -149,10 +179,13 @@ final class PDFMergeViewModel {
         }
     }
 
+    /// 成功バナー自動非表示タスク
+    private var bannerDismissTask: Task<Void, Never>?
+
     /// PDF結合を実行する
     /// - Parameter outputURL: 保存先のURL
     func merge(to outputURL: URL) async {
-        guard canMerge else { return }
+        guard canMerge, !isMerging else { return }
 
         isMerging = true
         mergeProgress = 0.0
@@ -160,8 +193,8 @@ final class PDFMergeViewModel {
         let urls = pdfItems.map(\.url)
 
         do {
-            try await PDFMergeService.merge(urls: urls, to: outputURL) { [weak self] progress in
-                Task { @MainActor in
+            try await PDFMergeService.merge(urls: urls, to: outputURL) { progress in
+                Task { @MainActor [weak self] in
                     self?.mergeProgress = progress
                 }
             }
@@ -169,9 +202,11 @@ final class PDFMergeViewModel {
             savedFileURL = outputURL
             showSuccessBanner = true
 
-            // 5秒後にバナーを非表示
-            Task { @MainActor in
+            // 前回のタイマーをキャンセルして再設定
+            bannerDismissTask?.cancel()
+            bannerDismissTask = Task { @MainActor in
                 try? await Task.sleep(for: .seconds(5))
+                guard !Task.isCancelled else { return }
                 withAnimation(.easeOut(duration: 0.5)) {
                     showSuccessBanner = false
                 }
