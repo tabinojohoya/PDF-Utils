@@ -11,12 +11,13 @@ import AppKit
 
 /// PDFファイル1件を表すモデル
 struct PDFItem: Identifiable, Hashable {
-    let id = UUID()
+    let id: UUID
     let url: URL
     let fileName: String
     let pageCount: Int
     let fileSize: Int64
     let thumbnail: NSImage
+    var pages: [PageItem]
 
     // MARK: - Hashable
 
@@ -55,53 +56,29 @@ struct PDFItem: Identifiable, Hashable {
         }
 
         // サムネイル生成（1ページ目）
-        let thumbnail = generateThumbnail(from: document)
+        let thumbnail = ThumbnailGenerator.generate(
+            from: document,
+            pageIndex: 0,
+            size: NSSize(width: 44, height: 56)
+        )
+
+        // ページ一覧を生成するために仮IDを先に確定
+        let itemID = UUID()
+
+        // 全ページのPageItemを生成
+        let pages = (0..<document.pageCount).map { index in
+            PageItem.create(from: document, parentID: itemID, pageIndex: index)
+        }
 
         return PDFItem(
+            id: itemID,
             url: url,
             fileName: url.lastPathComponent,
             pageCount: document.pageCount,
             fileSize: fileSize,
-            thumbnail: thumbnail
+            thumbnail: thumbnail,
+            pages: pages
         )
-    }
-
-    // MARK: - Thumbnail
-
-    /// PDFの1ページ目からサムネイルを生成（44×56pt、A4比率）
-    private static func generateThumbnail(from document: PDFDocument) -> NSImage {
-        let thumbnailSize = NSSize(width: 44, height: 56)
-
-        guard let page = document.page(at: 0) else {
-            return NSImage(size: thumbnailSize)
-        }
-
-        let pageRect = page.bounds(for: .mediaBox)
-        let scale = min(
-            thumbnailSize.width / pageRect.width,
-            thumbnailSize.height / pageRect.height
-        )
-
-        let scaledWidth = pageRect.width * scale
-        let scaledHeight = pageRect.height * scale
-        let offsetX = (thumbnailSize.width - scaledWidth) / 2
-        let offsetY = (thumbnailSize.height - scaledHeight) / 2
-
-        let image = NSImage(size: thumbnailSize, flipped: false) { _ in
-            // 背景を白で塗る
-            NSColor.white.setFill()
-            NSRect(origin: .zero, size: thumbnailSize).fill()
-
-            // ページを描画
-            guard let context = NSGraphicsContext.current?.cgContext else { return false }
-            context.saveGState()
-            context.translateBy(x: offsetX, y: offsetY)
-            context.scaleBy(x: scale, y: scale)
-            page.draw(with: .mediaBox, to: context)
-            context.restoreGState()
-            return true
-        }
-        return image
     }
 
     // MARK: - Formatted File Size

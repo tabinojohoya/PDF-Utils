@@ -11,51 +11,50 @@ import PDFKit
 /// PDF結合処理のコアエンジン
 enum PDFMergeService {
 
-    /// 複数のPDFファイルを結合し、指定パスに保存する
+    /// 複数のPDFファイルを指定ページのみ結合し、指定パスに保存する
     /// - Parameters:
-    ///   - urls: 結合するPDFファイルのURL配列（順序通り）
+    ///   - inputs: 結合するPDFファイルのURL＋対象ページインデックス配列
     ///   - outputURL: 保存先URL
     ///   - progress: 進捗コールバック (0.0〜1.0)
     /// - Throws: PDFMergeError
     nonisolated static func merge(
-        urls: [URL],
+        inputs: [(url: URL, pageIndices: [Int])],
         to outputURL: URL,
         progress: @escaping @Sendable (Double) -> Void
     ) async throws {
         // 重い処理をバックグラウンドスレッドで実行
         try await Task.detached(priority: .userInitiated) {
-            guard !urls.isEmpty else {
+            guard !inputs.isEmpty else {
                 throw PDFMergeError.noFiles
             }
 
-            // 全ファイルの合計ページ数を先に計算（進捗計算用）
-            let documents: [(url: URL, document: PDFDocument)] = try urls.map { url in
-                guard let doc = PDFDocument(url: url) else {
-                    throw PDFMergeError.fileNotReadable(url)
+            // 全ファイルを読み込み
+            let documents: [(document: PDFDocument, pageIndices: [Int])] = try inputs.map { input in
+                guard let doc = PDFDocument(url: input.url) else {
+                    throw PDFMergeError.fileNotReadable(input.url)
                 }
                 if doc.isLocked {
-                    throw PDFMergeError.passwordProtected(url)
+                    throw PDFMergeError.passwordProtected(input.url)
                 }
-                return (url, doc)
+                return (doc, input.pageIndices)
             }
 
-            let totalPages = documents.reduce(0) { $0 + $1.document.pageCount }
+            let totalPages = documents.reduce(0) { $0 + $1.pageIndices.count }
             guard totalPages > 0 else {
                 throw PDFMergeError.noFiles
             }
 
-            // 結合処理（バックグラウンドで実行）
+            // 結合処理
             let outputDocument = PDFDocument()
             var insertedPages = 0
 
-            for (_, document) in documents {
-                for pageIndex in 0..<document.pageCount {
+            for (document, pageIndices) in documents {
+                for pageIndex in pageIndices {
                     guard let page = document.page(at: pageIndex) else { continue }
 
                     outputDocument.insert(page, at: outputDocument.pageCount)
                     insertedPages += 1
 
-                    // 進捗を報告
                     let currentProgress = Double(insertedPages) / Double(totalPages)
                     progress(currentProgress)
                 }

@@ -22,9 +22,25 @@ struct ContentView: View {
                     emptyStateView
                 } else {
                     NavigationSplitView {
-                        PDFListView()
+                        Group {
+                            switch viewModel.viewMode {
+                            case .file:
+                                PDFListView()
+                            case .page:
+                                PageGridView()
+                            }
+                        }
+                        .animation(.easeInOut(duration: 0.25), value: viewModel.viewMode)
                     } detail: {
-                        PDFPreviewPane(selectedItem: viewModel.selectedItem)
+                        Group {
+                            if viewModel.isShowingMergedPreview,
+                               let mergedURL = viewModel.mergedDocumentURL {
+                                MergedPreviewView(url: mergedURL)
+                            } else {
+                                PDFPreviewPane(selectedItem: viewModel.selectedItem)
+                            }
+                        }
+                        .animation(.easeInOut(duration: 0.3), value: viewModel.isShowingMergedPreview)
                     }
                 }
             }
@@ -36,6 +52,26 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 600, minHeight: 400)
+        // キーボードショートカット: ⌘1 → ファイルビュー、⌘2 → ページビュー
+        .background {
+            Group {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        viewModel.viewMode = .file
+                    }
+                } label: { EmptyView() }
+                .keyboardShortcut("1", modifiers: .command)
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        viewModel.viewMode = .page
+                    }
+                } label: { EmptyView() }
+                .keyboardShortcut("2", modifiers: .command)
+            }
+            .frame(width: 0, height: 0)
+            .opacity(0)
+        }
         .overlay(alignment: .top) {
             // 成功バナー
             if viewModel.showSuccessBanner {
@@ -84,6 +120,27 @@ struct ContentView: View {
                 }
                 .keyboardShortcut("o", modifiers: .command)
                 .disabled(viewModel.isMerging)
+
+                if !viewModel.isEmpty {
+                    // ファイル/ページ表示切替
+                    Picker("表示モード", selection: Binding(
+                        get: { viewModel.viewMode },
+                        set: { newValue in
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                viewModel.viewMode = newValue
+                            }
+                        }
+                    )) {
+                        Label("ファイル", systemImage: "list.bullet")
+                            .tag(ViewMode.file)
+                        Label("ページ", systemImage: "rectangle.grid.2x2")
+                            .tag(ViewMode.page)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 120)
+                    .disabled(viewModel.isMerging)
+                    .accessibilityLabel("表示モード切替")
+                }
 
                 if !viewModel.isEmpty {
                     Button {
@@ -139,11 +196,16 @@ struct ContentView: View {
     private var statusBar: some View {
         HStack {
             Label(
-                "\(viewModel.pdfItems.count)ファイル · 合計\(viewModel.totalPageCount)ページ",
+                statusText,
                 systemImage: "doc.text"
             )
             .font(.caption)
             .foregroundStyle(.secondary)
+
+            // 0ページのファイル警告
+            if viewModel.viewMode == .page {
+                ZeroPagesWarningView()
+            }
 
             Spacer()
 
@@ -160,6 +222,24 @@ struct ContentView: View {
         .padding(.vertical, 6)
         .background(.bar)
         .accessibilityElement(children: .contain)
+    }
+
+    /// ステータスバーのテキスト
+    private var statusText: String {
+        // 出力プレビュー中は結合結果の情報を表示
+        if viewModel.isShowingMergedPreview, viewModel.mergedDocumentURL != nil {
+            let fileCount = viewModel.pdfItems.count
+            return "\(fileCount)ファイル · 結合結果: \(viewModel.mergedPageCount)ページ · \(viewModel.mergedFileSizeString)"
+        }
+
+        let fileCount = viewModel.pdfItems.count
+        let included = viewModel.includedPageCount
+        let total = viewModel.totalPageCount
+        if included < total {
+            return "\(fileCount)ファイル · \(included)/\(total)ページ選択中"
+        } else {
+            return "\(fileCount)ファイル · 合計\(total)ページ"
+        }
     }
 
     // MARK: - Success Banner
