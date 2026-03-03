@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Products/Release/PDF-Utils.app/Contents/MacOS/PDF-Utils'
+relocations:     []
+...

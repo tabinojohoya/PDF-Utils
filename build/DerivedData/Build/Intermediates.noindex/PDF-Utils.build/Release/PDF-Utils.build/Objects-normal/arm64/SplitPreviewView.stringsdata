@@ -1,0 +1,88 @@
+{
+  "source": "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/SplitPreviewView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "プレビュー領域。PDFを選択してください",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 193
+        }
+      },
+      {
+        "comment": "",
+        "key": "分割設定を完了すると、ここに分割プレビューが表示されます",
+        "location": {
+          "startingColumn": 15,
+          "startingLine": 171
+        }
+      },
+      {
+        "comment": "",
+        "key": "分割設定が未完了です。左ペインで分割方法を設定してください",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 175
+        }
+      },
+      {
+        "comment": "",
+        "key": "パート%lld",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 106
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldページ",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 107
+        }
+      },
+      {
+        "comment": "",
+        "key": "Part %lld（%lldページ）",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 86
+        }
+      },
+      {
+        "comment": "",
+        "key": "パート%lld、%lldページ",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 91
+        }
+      },
+      {
+        "comment": "",
+        "key": "ページ%lld",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 150
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 141
+        }
+      },
+      {
+        "comment": "",
+        "key": "PDFを選択してプレビュー",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 187
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -18,9 +18,7 @@ struct PageThumbnailView: View {
         VStack(spacing: 4) {
             // サムネイル画像
             ZStack(alignment: .topLeading) {
-                Image(nsImage: page.thumbnail)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
+                thumbnailContent
                     .frame(width: 80, height: 104)
                     .clipShape(RoundedRectangle(cornerRadius: 3))
                     .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
@@ -85,6 +83,26 @@ struct PageThumbnailView: View {
         }
         .accessibilityAction(named: "選択") {
             onSelect()
+        }
+    }
+
+    // MARK: - Thumbnail Content
+
+    /// サムネイル画像、またはロード中プレースホルダー
+    @ViewBuilder
+    private var thumbnailContent: some View {
+        if let thumbnail = page.thumbnail {
+            Image(nsImage: thumbnail)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.gray.opacity(0.15))
+                ProgressView()
+                    .scaleEffect(0.6)
+                    .controlSize(.small)
+            }
         }
     }
 }

@@ -24,9 +24,18 @@ struct ContentView: View {
                         emptyStateView
                     } else {
                         NavigationSplitView {
-                            PDFListView()
+                            if viewModel.viewMode == .file {
+                                PDFListView()
+                            } else {
+                                PageGridView()
+                            }
                         } detail: {
-                            PDFPreviewPane(selectedItem: viewModel.selectedItem)
+                            if viewModel.isShowingMergedPreview,
+                               let url = viewModel.mergedDocumentURL {
+                                MergedPreviewView(url: url)
+                            } else {
+                                PDFPreviewPane(selectedItem: viewModel.selectedItem)
+                            }
                         }
                     }
                 case .split:
@@ -132,6 +141,18 @@ struct ContentView: View {
 
             ToolbarItemGroup(placement: .automatic) {
                 if viewModel.appMode == .merge {
+                    // 表示モード切替（ファイル / ページ）
+                    Picker("表示", selection: $vm.viewMode) {
+                        Label("ファイル", systemImage: "list.bullet")
+                            .tag(PDFMergeViewModel.ViewMode.file)
+                        Label("ページ", systemImage: "square.grid.2x2")
+                            .tag(PDFMergeViewModel.ViewMode.page)
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(viewModel.isMerging)
+                    .accessibilityLabel("表示モード切替")
+                    .frame(width: 120)
+
                     Button {
                         isFileImporterPresented = true
                     } label: {
@@ -141,6 +162,22 @@ struct ContentView: View {
                     .disabled(viewModel.isMerging)
 
                     if !viewModel.isEmpty {
+                        Button {
+                            viewModel.moveSelectedUp()
+                        } label: {
+                            Label("上に移動", systemImage: "chevron.up")
+                        }
+                        .disabled(viewModel.selectedItemID == nil || viewModel.isMerging || viewModel.pdfItems.first?.id == viewModel.selectedItemID)
+                        .accessibilityLabel("選択ファイルを上に移動")
+
+                        Button {
+                            viewModel.moveSelectedDown()
+                        } label: {
+                            Label("下に移動", systemImage: "chevron.down")
+                        }
+                        .disabled(viewModel.selectedItemID == nil || viewModel.isMerging || viewModel.pdfItems.last?.id == viewModel.selectedItemID)
+                        .accessibilityLabel("選択ファイルを下に移動")
+
                         Button {
                             viewModel.removeSelectedItem()
                         } label: {
@@ -197,6 +234,12 @@ struct ContentView: View {
             return "\(groups.count)ファイルに分割"
         }
         return "分割不可"
+    }
+
+    // MARK: - Status Text
+
+    private var statusText: String {
+        "\(viewModel.pdfItems.count)ファイル · 合計\(viewModel.includedPageCount)ページ"
     }
 
     // MARK: - Merge Status Bar

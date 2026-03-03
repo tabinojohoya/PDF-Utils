@@ -1,0 +1,24 @@
+{
+  "source": "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/PDFPreviewView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "プレビュー領域。PDFを選択してください",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "PDFを選択してプレビュー",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 57
+        }
+      }
+    ]
+  },
+  "version": 1
+}

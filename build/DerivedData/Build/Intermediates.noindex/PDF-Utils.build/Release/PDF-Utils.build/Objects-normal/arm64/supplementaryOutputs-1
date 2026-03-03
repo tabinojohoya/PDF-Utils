@@ -1,0 +1,12 @@
+{
+  "/Users/soma/Apps/PDF-Utils/PDF-Utils/Models/PageItem.swift" : {
+    "abi-baseline-json" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF_Utils.abi.json",
+    "const-values" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF-Utils-primary.swiftconstvalues",
+    "dependencies" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF-Utils-primary.d",
+    "diagnostics" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF-Utils-primary.dia",
+    "objc-header" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF_Utils-Swift.h",
+    "swiftdoc" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF_Utils.swiftdoc",
+    "swiftmodule" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF_Utils.swiftmodule",
+    "swiftsourceinfo" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF_Utils.swiftsourceinfo"
+  }
+}

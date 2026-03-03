@@ -1,0 +1,48 @@
+{
+  "source": "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/MergedPreviewView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "結合結果のプレビュー",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 48
+        }
+      },
+      {
+        "comment": "",
+        "key": "結合結果: %lldページ · %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 39
+        }
+      },
+      {
+        "comment": "",
+        "key": "編集に戻る",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "ファイル・ページ選択画面に戻ります",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 34
+        }
+      },
+      {
+        "comment": "",
+        "key": "編集に戻る",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 29
+        }
+      }
+    ]
+  },
+  "version": 1
+}

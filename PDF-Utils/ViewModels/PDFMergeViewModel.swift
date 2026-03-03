@@ -51,6 +51,32 @@ final class PDFMergeViewModel {
     /// 結合後に保存したファイルのURL
     var savedFileURL: URL? = nil
 
+    // MARK: - View Mode State (v1.1)
+
+    /// 表示モード（ファイルリスト or ページグリッド）
+    enum ViewMode: String, CaseIterable {
+        case file   // ファイルリスト表示
+        case page   // ページサムネイル表示
+    }
+
+    /// 現在の表示モード
+    var viewMode: ViewMode = .file
+
+    /// 現在選択中のページID（ページビュー用）
+    var selectedPageID: PageItem.ID? = nil
+
+    /// 結合結果プレビューを表示中か
+    var isShowingMergedPreview: Bool = false
+
+    /// 結合結果のURL（プレビュー用）
+    var mergedDocumentURL: URL? = nil
+
+    /// 結合結果のページ数（プレビュー表示用）
+    var mergedPageCount: Int = 0
+
+    /// 結合結果のファイルサイズ文字列（プレビュー表示用）
+    var mergedFileSizeString: String = ""
+
     // MARK: - Split Mode State
 
     /// 分割元のPDFアイテム
@@ -144,9 +170,12 @@ final class PDFMergeViewModel {
 
             do {
                 let item = try PDFItem.create(from: url)
+                let itemID = item.id
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     pdfItems.append(item)
                 }
+                // ページサムネイルを非同期ロード
+                loadPageThumbnails(for: itemID)
                 // ソース変更時は出力プレビューを解除
                 dismissMergedPreview()
             } catch {
@@ -485,4 +514,31 @@ final class PDFMergeViewModel {
 
     /// 分割成功バナー自動非表示タスク
     private var splitBannerDismissTask: Task<Void, Never>?
+
+    // MARK: - Async Thumbnail Loading
+
+    /// 指定アイテムのページサムネイルを非同期で一括ロードする
+    /// - Parameter itemID: 対象の PDFItem.ID
+    func loadPageThumbnails(for itemID: PDFItem.ID) {
+        guard let index = pdfItems.firstIndex(where: { $0.id == itemID }) else { return }
+        let url = pdfItems[index].url
+
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let thumbnails = await ThumbnailGenerator.generateAll(
+                from: url,
+                size: PageItem.thumbnailSize
+            )
+
+            await MainActor.run {
+                guard let self,
+                      let itemIdx = self.pdfItems.firstIndex(where: { $0.id == itemID })
+                else { return }
+
+                for (pageIndex, image) in thumbnails {
+                    guard pageIndex < self.pdfItems[itemIdx].pages.count else { continue }
+                    self.pdfItems[itemIdx].pages[pageIndex].thumbnail = image
+                }
+            }
+        }
+    }
 }

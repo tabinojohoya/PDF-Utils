@@ -102,11 +102,17 @@ struct PageGridView: View {
                 )
                 .draggable(page.id.uuidString) {
                     // ドラッグ中のプレビュー
-                    Image(nsImage: page.thumbnail)
-                        .resizable()
-                        .frame(width: 60, height: 78)
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
-                        .opacity(0.8)
+                    if let thumbnail = page.thumbnail {
+                        Image(nsImage: thumbnail)
+                            .resizable()
+                            .frame(width: 60, height: 78)
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                            .opacity(0.8)
+                    } else {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 60, height: 78)
+                    }
                 }
             }
             .onMove { source, destination in

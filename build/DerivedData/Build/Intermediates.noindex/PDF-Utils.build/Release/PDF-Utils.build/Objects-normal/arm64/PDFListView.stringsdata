@@ -1,0 +1,32 @@
+{
+  "source": "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/PDFListView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "PDFファイル一覧",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "上に移動",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 21
+        }
+      },
+      {
+        "comment": "",
+        "key": "下に移動",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 26
+        }
+      }
+    ]
+  },
+  "version": 1
+}

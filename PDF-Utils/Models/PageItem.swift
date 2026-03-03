@@ -14,8 +14,12 @@ struct PageItem: Identifiable, Hashable {
     let id = UUID()
     let parentID: PDFItem.ID
     let pageIndex: Int
-    let thumbnail: NSImage
+    /// サムネイル画像（nil = 未生成、非同期でロードされる）
+    var thumbnail: NSImage?
     var isIncluded: Bool = true
+
+    /// ページサムネイルの標準サイズ
+    static let thumbnailSize = NSSize(width: 80, height: 104)
 
     // MARK: - Hashable
 
@@ -29,7 +33,12 @@ struct PageItem: Identifiable, Hashable {
 
     // MARK: - Factory
 
-    /// PDFDocumentの指定ページからPageItemを生成する
+    /// サムネイル未生成のプレースホルダーを生成する（即座に返る）
+    static func placeholder(parentID: PDFItem.ID, pageIndex: Int) -> PageItem {
+        PageItem(parentID: parentID, pageIndex: pageIndex, thumbnail: nil)
+    }
+
+    /// PDFDocumentの指定ページからPageItemを生成する（同期・サムネイル付き）
     static func create(
         from document: PDFDocument,
         parentID: PDFItem.ID,
@@ -38,7 +47,7 @@ struct PageItem: Identifiable, Hashable {
         let thumbnail = ThumbnailGenerator.generate(
             from: document,
             pageIndex: pageIndex,
-            size: NSSize(width: 80, height: 104)
+            size: thumbnailSize
         )
 
         return PageItem(

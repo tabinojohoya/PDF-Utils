@@ -84,4 +84,28 @@ enum ThumbnailGenerator {
         }
         return image
     }
+
+    // MARK: - Async Batch Generation
+
+    /// 全ページのサムネイルをバックグラウンドで一括生成し、1ページずつコールバックする
+    /// - Parameters:
+    ///   - url: PDFファイルのURL
+    ///   - size: 出力サムネイルサイズ
+    /// - Returns: ページインデックスとサムネイル画像の辞書
+    static func generateAll(
+        from url: URL,
+        size: NSSize
+    ) async -> [Int: NSImage] {
+        await Task.detached(priority: .userInitiated) {
+            guard let document = PDFDocument(url: url) else {
+                return [Int: NSImage]()
+            }
+            var results = [Int: NSImage]()
+            results.reserveCapacity(document.pageCount)
+            for i in 0..<document.pageCount {
+                results[i] = generate(from: document, pageIndex: i, size: size)
+            }
+            return results
+        }.value
+    }
 }
