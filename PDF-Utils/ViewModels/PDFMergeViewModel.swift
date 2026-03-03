@@ -10,11 +10,22 @@ import SwiftUI
 import PDFKit
 import UniformTypeIdentifiers
 
+/// アプリの動作モード
+enum AppMode: String, CaseIterable, Identifiable {
+    case merge  // 結合モード
+    case split  // 分割モード
+
+    var id: String { rawValue }
+}
+
 /// PDF結合アプリの全状態を一元管理するViewModel
 @Observable
 final class PDFMergeViewModel {
 
     // MARK: - State
+
+    /// 現在の動作モード
+    var appMode: AppMode = .merge
 
     /// 追加されたPDFファイルの一覧（表示順 = 結合順）
     var pdfItems: [PDFItem] = []
@@ -40,6 +51,29 @@ final class PDFMergeViewModel {
     /// 結合後に保存したファイルのURL
     var savedFileURL: URL? = nil
 
+    // MARK: - Split Mode State
+
+    /// 分割元のPDFアイテム
+    var splitSourceItem: PDFItem? = nil
+
+    /// 分割設定
+    var splitConfig: SplitConfig = SplitConfig()
+
+    /// 分割処理中か
+    var isSplitting: Bool = false
+
+    /// 分割処理の進捗（0.0〜1.0）
+    var splitProgress: Double = 0.0
+
+    /// 分割後に生成されたファイルのURL配列
+    var splitOutputURLs: [URL] = []
+
+    /// 分割出力先ディレクトリ
+    var splitOutputDirectory: URL? = nil
+
+    /// 分割成功バナーを表示するか
+    var showSplitSuccessBanner: Bool = false
+
     // MARK: - Computed Properties
 
     /// 全ファイルの合計ページ数
@@ -61,6 +95,26 @@ final class PDFMergeViewModel {
     var selectedItem: PDFItem? {
         guard let id = selectedItemID else { return nil }
         return pdfItems.first { $0.id == id }
+    }
+
+    /// 分割グループのリアルタイム計算結果
+    var splitGroups: Result<[[Int]], SplitConfigError> {
+        guard let source = splitSourceItem else {
+            return .failure(.emptyResult)
+        }
+        return splitConfig.computeGroups(totalPages: source.pageCount)
+    }
+
+    /// 分割可能か（ソースファイルがあり、有効な分割設定）
+    var canSplit: Bool {
+        guard splitSourceItem != nil, !isSplitting else { return false }
+        if case .success = splitGroups { return true }
+        return false
+    }
+
+    /// 処理中か（結合または分割）
+    var isProcessing: Bool {
+        isMerging || isSplitting
     }
 
     // MARK: - Actions
@@ -224,4 +278,83 @@ final class PDFMergeViewModel {
         guard let url = savedFileURL else { return }
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
+
+    // MARK: - Split Actions
+
+    /// 分割元PDFを設定する
+    /// - Parameter url: 分割元PDFファイルのURL
+    func setSplitSource(url: URL) {
+        guard !isSplitting else { return }
+
+        // 既存ソースのセキュリティスコープを解放
+        splitSourceItem?.url.stopAccessingSecurityScopedResource()
+
+        do {
+            let item = try PDFItem.create(from: url)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                splitSourceItem = item
+            }
+            // 設定をリセット
+            splitConfig = SplitConfig()
+            splitOutputURLs = []
+            splitOutputDirectory = nil
+            showSplitSuccessBanner = false
+        } catch {
+            alertMessage = error.localizedDescription
+        }
+    }
+
+    /// PDF分割を実行する
+    /// - Parameter outputDirectory: 出力先ディレクトリのURL
+    func split(to outputDirectory: URL) async {
+        guard canSplit, let source = splitSourceItem else { return }
+
+        guard case .success(let groups) = splitGroups else { return }
+
+        isSplitting = true
+        splitProgress = 0.0
+
+        let baseName = source.url.deletingPathExtension().lastPathComponent
+
+        do {
+            let urls = try await PDFSplitService.split(
+                url: source.url,
+                groups: groups,
+                to: outputDirectory,
+                baseName: baseName
+            ) { progress in
+                Task { @MainActor [weak self] in
+                    self?.splitProgress = progress
+                }
+            }
+
+            splitOutputURLs = urls
+            splitOutputDirectory = outputDirectory
+            showSplitSuccessBanner = true
+
+            // バナー自動非表示
+            splitBannerDismissTask?.cancel()
+            splitBannerDismissTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(5))
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeOut(duration: 0.5)) {
+                    showSplitSuccessBanner = false
+                }
+            }
+        } catch {
+            alertMessage = error.localizedDescription
+        }
+
+        isSplitting = false
+        splitProgress = 0.0
+    }
+
+    /// 分割結果の出力フォルダをFinderで表示する
+    func revealSplitOutputInFinder() {
+        guard let dir = splitOutputDirectory else { return }
+        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: dir.path)
+    }
+
+    /// 分割成功バナー自動非表示タスク
+    private var splitBannerDismissTask: Task<Void, Never>?
 }

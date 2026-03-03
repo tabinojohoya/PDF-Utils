@@ -18,28 +18,47 @@ struct ContentView: View {
 
         VStack(spacing: 0) {
             Group {
-                if viewModel.isEmpty {
-                    emptyStateView
-                } else {
+                switch viewModel.appMode {
+                case .merge:
+                    if viewModel.isEmpty {
+                        emptyStateView
+                    } else {
+                        NavigationSplitView {
+                            PDFListView()
+                        } detail: {
+                            PDFPreviewPane(selectedItem: viewModel.selectedItem)
+                        }
+                    }
+                case .split:
                     NavigationSplitView {
-                        PDFListView()
+                        SplitConfigView()
                     } detail: {
-                        PDFPreviewPane(selectedItem: viewModel.selectedItem)
+                        SplitPreviewView()
                     }
                 }
             }
 
-            // ステータスバー（ファイルがある場合のみ表示）
-            if !viewModel.isEmpty {
+            // ステータスバー
+            if viewModel.appMode == .merge && !viewModel.isEmpty {
                 Divider()
-                statusBar
+                mergeStatusBar
+            }
+            if viewModel.appMode == .split && viewModel.splitSourceItem != nil {
+                Divider()
+                splitStatusBar
             }
         }
         .frame(minWidth: 600, minHeight: 400)
+        .animation(.easeInOut(duration: 0.25), value: viewModel.appMode)
         .overlay(alignment: .top) {
             // 成功バナー
             if viewModel.showSuccessBanner {
-                successBanner
+                mergeSuccessBanner
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, 8)
+            }
+            if viewModel.showSplitSuccessBanner {
+                splitSuccessBanner
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .padding(.top, 8)
             }
@@ -50,10 +69,20 @@ struct ContentView: View {
             }
         }
         .dropDestination(for: URL.self) { urls, _ in
-            guard !viewModel.isMerging else { return false }
+            guard !viewModel.isProcessing else { return false }
             let pdfURLs = urls.filter { $0.pathExtension.lowercased() == "pdf" }
             guard !pdfURLs.isEmpty else { return false }
-            viewModel.addFiles(urls: pdfURLs)
+
+            switch viewModel.appMode {
+            case .merge:
+                viewModel.addFiles(urls: pdfURLs)
+            case .split:
+                // 分割モードでは先頭1ファイルのみ採用
+                if let url = pdfURLs.first {
+                    guard url.startAccessingSecurityScopedResource() else { return false }
+                    viewModel.setSplitSource(url: url)
+                }
+            }
             return true
         } isTargeted: { targeted in
             withAnimation(.easeInOut(duration: 0.2)) {
@@ -61,8 +90,20 @@ struct ContentView: View {
             }
         }
         .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Picker("モード", selection: $vm.appMode) {
+                    Label("結合", systemImage: "doc.on.doc")
+                        .tag(AppMode.merge)
+                    Label("分割", systemImage: "rectangle.split.2x1")
+                        .tag(AppMode.split)
+                }
+                .pickerStyle(.segmented)
+                .disabled(viewModel.isProcessing)
+                .accessibilityLabel("動作モード切替")
+            }
+
             ToolbarItemGroup(placement: .primaryAction) {
-                if !viewModel.isEmpty {
+                if viewModel.appMode == .merge && !viewModel.isEmpty {
                     Button {
                         performMerge()
                     } label: {
@@ -74,32 +115,47 @@ struct ContentView: View {
                     .accessibilityLabel("PDFを結合")
                     .accessibilityValue("\(viewModel.pdfItems.count)ファイル")
                 }
+
+                if viewModel.appMode == .split && viewModel.splitSourceItem != nil {
+                    Button {
+                        performSplit()
+                    } label: {
+                        Label("分割", systemImage: "scissors")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!viewModel.canSplit)
+                    .keyboardShortcut("s", modifiers: .command)
+                    .accessibilityLabel("PDFを分割")
+                    .accessibilityValue(splitAccessibilityValue)
+                }
             }
 
             ToolbarItemGroup(placement: .automatic) {
-                Button {
-                    isFileImporterPresented = true
-                } label: {
-                    Label("ファイル追加", systemImage: "plus")
-                }
-                .keyboardShortcut("o", modifiers: .command)
-                .disabled(viewModel.isMerging)
-
-                if !viewModel.isEmpty {
+                if viewModel.appMode == .merge {
                     Button {
-                        viewModel.removeSelectedItem()
+                        isFileImporterPresented = true
                     } label: {
-                        Label("削除", systemImage: "trash")
+                        Label("ファイル追加", systemImage: "plus")
                     }
-                    .disabled(viewModel.selectedItemID == nil || viewModel.isMerging)
-                    .keyboardShortcut(.delete, modifiers: .command)
-
-                    Button {
-                        viewModel.clearAll()
-                    } label: {
-                        Label("全クリア", systemImage: "trash.slash")
-                    }
+                    .keyboardShortcut("o", modifiers: .command)
                     .disabled(viewModel.isMerging)
+
+                    if !viewModel.isEmpty {
+                        Button {
+                            viewModel.removeSelectedItem()
+                        } label: {
+                            Label("削除", systemImage: "trash")
+                        }
+                        .disabled(viewModel.selectedItemID == nil || viewModel.isMerging)
+                        .keyboardShortcut(.delete, modifiers: .command)
+
+                        Button {
+                            viewModel.clearAll()
+                        } label: {
+                            Label("全クリア", systemImage: "trash.slash")
+                        }
+                        .disabled(viewModel.isMerging)
+                    }
                 }
             }
         }
@@ -134,9 +190,18 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Status Bar
+    // MARK: - Split Accessibility
 
-    private var statusBar: some View {
+    private var splitAccessibilityValue: String {
+        if case .success(let groups) = viewModel.splitGroups {
+            return "\(groups.count)ファイルに分割"
+        }
+        return "分割不可"
+    }
+
+    // MARK: - Merge Status Bar
+
+    private var mergeStatusBar: some View {
         HStack {
             Label(
                 "\(viewModel.pdfItems.count)ファイル · 合計\(viewModel.totalPageCount)ページ",
@@ -162,9 +227,45 @@ struct ContentView: View {
         .accessibilityElement(children: .contain)
     }
 
-    // MARK: - Success Banner
+    // MARK: - Split Status Bar
 
-    private var successBanner: some View {
+    private var splitStatusBar: some View {
+        HStack {
+            if let source = viewModel.splitSourceItem {
+                Label(
+                    "\(source.fileName) · \(source.pageCount)ページ",
+                    systemImage: "doc.text"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                if case .success(let groups) = viewModel.splitGroups {
+                    Text("→ \(groups.count)ファイル")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            if viewModel.isSplitting {
+                ProgressView(value: viewModel.splitProgress)
+                    .progressViewStyle(.linear)
+                    .frame(width: 120)
+                    .transition(.opacity)
+                    .accessibilityLabel("分割の進捗")
+                    .accessibilityValue("\(Int(viewModel.splitProgress * 100))パーセント")
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+        .background(.bar)
+        .accessibilityElement(children: .contain)
+    }
+
+    // MARK: - Merge Success Banner
+
+    private var mergeSuccessBanner: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
@@ -201,6 +302,47 @@ struct ContentView: View {
         .padding(.horizontal, 20)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("結合完了通知")
+    }
+
+    // MARK: - Split Success Banner
+
+    private var splitSuccessBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .accessibilityHidden(true)
+
+            Text("\(viewModel.splitOutputURLs.count)ファイルに分割しました")
+                .font(.body)
+                .fontWeight(.medium)
+
+            Spacer()
+
+            Button("Finderで表示") {
+                viewModel.revealSplitOutputInFinder()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+
+            Button {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    viewModel.showSplitSuccessBanner = false
+                }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("バナーを閉じる")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+        .padding(.horizontal, 20)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("分割完了通知")
     }
 
     // MARK: - Empty State
@@ -242,6 +384,25 @@ struct ContentView: View {
             guard response == .OK, let url = savePanel.url else { return }
             Task {
                 await viewModel.merge(to: url)
+            }
+        }
+    }
+
+    // MARK: - Split Action
+
+    private func performSplit() {
+        let openPanel = NSOpenPanel()
+        openPanel.canChooseDirectories = true
+        openPanel.canChooseFiles = false
+        openPanel.canCreateDirectories = true
+        openPanel.allowsMultipleSelection = false
+        openPanel.title = "分割ファイルの保存先フォルダを選択"
+        openPanel.prompt = "選択"
+
+        openPanel.begin { response in
+            guard response == .OK, let url = openPanel.url else { return }
+            Task {
+                await viewModel.split(to: url)
             }
         }
     }
