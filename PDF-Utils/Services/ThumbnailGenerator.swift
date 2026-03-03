@@ -52,4 +52,36 @@ enum ThumbnailGenerator {
         }
         return image
     }
+
+    /// PDFPage から直接サムネイルを生成する
+    /// - Parameters:
+    ///   - page: 対象の PDFPage
+    ///   - size: 出力サムネイルサイズ
+    /// - Returns: サムネイル画像
+    static func generate(from page: PDFPage, size: NSSize) -> NSImage {
+        let pageRect = page.bounds(for: .mediaBox)
+        let scale = min(
+            size.width / pageRect.width,
+            size.height / pageRect.height
+        )
+
+        let scaledWidth = pageRect.width * scale
+        let scaledHeight = pageRect.height * scale
+        let offsetX = (size.width - scaledWidth) / 2
+        let offsetY = (size.height - scaledHeight) / 2
+
+        let image = NSImage(size: size, flipped: false) { _ in
+            NSColor.white.setFill()
+            NSRect(origin: .zero, size: size).fill()
+
+            guard let context = NSGraphicsContext.current?.cgContext else { return false }
+            context.saveGState()
+            context.translateBy(x: offsetX, y: offsetY)
+            context.scaleBy(x: scale, y: scale)
+            page.draw(with: .mediaBox, to: context)
+            context.restoreGState()
+            return true
+        }
+        return image
+    }
 }

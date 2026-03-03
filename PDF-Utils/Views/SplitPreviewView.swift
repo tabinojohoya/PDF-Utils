@@ -197,44 +197,19 @@ struct SplitPreviewView: View {
 
     /// 全ページのサムネイルを非同期生成
     private func generateAllThumbnails(url: URL) {
+        let size = Self.thumbnailSize
         Task.detached(priority: .userInitiated) {
             guard let document = PDFDocument(url: url) else { return }
             let totalPages = document.pageCount
 
             for pageIndex in 0..<totalPages {
                 guard let page = document.page(at: pageIndex) else { continue }
-                let thumbnail = Self.renderThumbnail(from: page)
+                let thumbnail = ThumbnailGenerator.generate(from: page, size: size)
 
                 await MainActor.run {
                     pageThumbnails[pageIndex] = thumbnail
                 }
             }
         }
-    }
-
-    /// PDFPageからサムネイルを描画（80×104pt）
-    private static func renderThumbnail(from page: PDFPage) -> NSImage {
-        let size = thumbnailSize
-        let pageRect = page.bounds(for: .mediaBox)
-        let scale = min(size.width / pageRect.width, size.height / pageRect.height)
-
-        let scaledWidth = pageRect.width * scale
-        let scaledHeight = pageRect.height * scale
-        let offsetX = (size.width - scaledWidth) / 2
-        let offsetY = (size.height - scaledHeight) / 2
-
-        let image = NSImage(size: size, flipped: false) { _ in
-            NSColor.white.setFill()
-            NSRect(origin: .zero, size: size).fill()
-
-            guard let context = NSGraphicsContext.current?.cgContext else { return false }
-            context.saveGState()
-            context.translateBy(x: offsetX, y: offsetY)
-            context.scaleBy(x: scale, y: scale)
-            page.draw(with: .mediaBox, to: context)
-            context.restoreGState()
-            return true
-        }
-        return image
     }
 }
