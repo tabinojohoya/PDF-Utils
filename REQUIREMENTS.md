@@ -9,7 +9,7 @@
 | 開発言語 | Swift 5 (Swift 6 Concurrency対応) |
 | UIフレームワーク | SwiftUI |
 | 開発環境 | Xcode 26.2 |
-| バンドルID | com.example.PDF-Utils |
+| バンドルID | com.soma.PDF-Utils |
 | 最小動作OS | macOS 26.2 |
 
 ## 2. アプリの目的
