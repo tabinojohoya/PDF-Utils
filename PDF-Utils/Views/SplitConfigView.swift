@@ -108,7 +108,7 @@ struct SplitConfigView: View {
                 guard let url = urls.first else { return }
                 viewModel.setSplitSource(url: url)
             case .failure(let error):
-                viewModel.alertMessage = error.localizedDescription
+                viewModel.currentError = .from(error)
             }
         }
         .navigationTitle("分割設定")

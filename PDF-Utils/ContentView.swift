@@ -204,20 +204,24 @@ struct ContentView: View {
             case .success(let urls):
                 viewModel.addFiles(urls: urls)
             case .failure(let error):
-                viewModel.alertMessage = error.localizedDescription
+                viewModel.currentError = .from(error)
             }
         }
         .alert(
-            "エラー",
+            viewModel.currentError?.title ?? "エラー",
             isPresented: Binding(
-                get: { vm.alertMessage != nil },
-                set: { if !$0 { vm.alertMessage = nil } }
+                get: { vm.currentError != nil },
+                set: { if !$0 { vm.currentError = nil } }
             )
         ) {
             Button("OK", role: .cancel) { }
         } message: {
-            if let message = viewModel.alertMessage {
-                Text(message)
+            if let error = viewModel.currentError {
+                if let suggestion = error.recoverySuggestion {
+                    Text("\(error.message)\n\n\(suggestion)")
+                } else {
+                    Text(error.message)
+                }
             }
         }
     }

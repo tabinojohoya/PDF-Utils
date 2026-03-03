@@ -47,8 +47,8 @@ final class PDFMergeViewModel {
     /// 結合処理の進捗（0.0〜1.0）
     var mergeProgress: Double = 0.0
 
-    /// エラーメッセージ（Alert表示用）
-    var alertMessage: String? = nil
+    /// 構造化エラー（Alert表示用）
+    var currentError: AppError? = nil
 
     /// 成功バナーを表示するか
     var showSuccessBanner: Bool = false
@@ -163,7 +163,7 @@ final class PDFMergeViewModel {
         // 結合中は追加を受け付けない
         guard !isMerging else { return }
 
-        var errors: [String] = []
+        var addErrors: [AppError] = []
         var skippedDuplicates = 0
 
         for url in urls {
@@ -175,7 +175,7 @@ final class PDFMergeViewModel {
 
             // セキュリティスコープアクセスを確保
             guard scopeManager.startAccessing(url) else {
-                errors.append("\(url.lastPathComponent) へのアクセスが拒否されました。")
+                addErrors.append(.accessDenied(fileName: url.lastPathComponent))
                 continue
             }
 
@@ -190,15 +190,15 @@ final class PDFMergeViewModel {
                 // ソース変更時は出力プレビューを解除
                 dismissMergedPreview()
             } catch {
-                errors.append(error.localizedDescription)
+                addErrors.append(.from(error))
             }
         }
 
-        // エラーがあれば一括通知
-        if !errors.isEmpty {
-            alertMessage = errors.joined(separator: "\n")
+        // エラーがあれば先頭のものを表示
+        if let firstError = addErrors.first {
+            currentError = firstError
         } else if skippedDuplicates > 0 && urls.count == skippedDuplicates {
-            alertMessage = "選択されたファイルはすべて追加済みです。"
+            currentError = .duplicateFiles(count: skippedDuplicates)
         }
 
         // 追加後、最初のアイテムが未選択なら自動選択
@@ -392,7 +392,7 @@ final class PDFMergeViewModel {
         }
 
         guard !mergeInputs.isEmpty else {
-            alertMessage = "結合対象のページがありません。"
+            currentError = .noIncludedPages
             isMerging = false
             return
         }
@@ -434,7 +434,7 @@ final class PDFMergeViewModel {
                 }
             }
         } catch {
-            alertMessage = error.localizedDescription
+            currentError = .from(error)
         }
 
         isMerging = false
@@ -461,7 +461,7 @@ final class PDFMergeViewModel {
 
         // セキュリティスコープアクセスを確保
         guard scopeManager.startAccessing(url) else {
-            alertMessage = "ファイルへのアクセスが拒否されました。"
+            currentError = .accessDenied(fileName: url.lastPathComponent)
             return
         }
 
@@ -476,7 +476,7 @@ final class PDFMergeViewModel {
             splitOutputDirectory = nil
             showSplitSuccessBanner = false
         } catch {
-            alertMessage = error.localizedDescription
+            currentError = .from(error)
         }
     }
 
@@ -518,7 +518,7 @@ final class PDFMergeViewModel {
                 }
             }
         } catch {
-            alertMessage = error.localizedDescription
+            currentError = .from(error)
         }
 
         isSplitting = false
