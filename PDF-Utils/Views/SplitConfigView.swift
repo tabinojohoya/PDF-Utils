@@ -106,10 +106,6 @@ struct SplitConfigView: View {
             switch result {
             case .success(let urls):
                 guard let url = urls.first else { return }
-                guard url.startAccessingSecurityScopedResource() else {
-                    viewModel.alertMessage = "ファイルへのアクセスが拒否されました。"
-                    return
-                }
                 viewModel.setSplitSource(url: url)
             case .failure(let error):
                 viewModel.alertMessage = error.localizedDescription

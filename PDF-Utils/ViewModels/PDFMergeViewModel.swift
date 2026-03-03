@@ -22,6 +22,11 @@ enum AppMode: String, CaseIterable, Identifiable {
 @Observable
 final class PDFMergeViewModel {
 
+    // MARK: - Services
+
+    /// セキュリティスコープ管理
+    let scopeManager = SecurityScopeManager()
+
     // MARK: - State
 
     /// 現在の動作モード
@@ -168,6 +173,12 @@ final class PDFMergeViewModel {
                 continue
             }
 
+            // セキュリティスコープアクセスを確保
+            guard scopeManager.startAccessing(url) else {
+                errors.append("\(url.lastPathComponent) へのアクセスが拒否されました。")
+                continue
+            }
+
             do {
                 let item = try PDFItem.create(from: url)
                 let itemID = item.id
@@ -203,7 +214,7 @@ final class PDFMergeViewModel {
 
         // 削除対象のセキュリティスコープを解放
         for item in pdfItems where ids.contains(item.id) {
-            item.url.stopAccessingSecurityScopedResource()
+            scopeManager.stopAccessing(item.url)
         }
 
         withAnimation(.easeOut(duration: 0.25)) {
@@ -230,7 +241,7 @@ final class PDFMergeViewModel {
 
         // 全アイテムのセキュリティスコープを解放
         for item in pdfItems {
-            item.url.stopAccessingSecurityScopedResource()
+            scopeManager.stopAccessing(item.url)
         }
 
         withAnimation(.easeOut(duration: 0.25)) {
@@ -444,7 +455,15 @@ final class PDFMergeViewModel {
         guard !isSplitting else { return }
 
         // 既存ソースのセキュリティスコープを解放
-        splitSourceItem?.url.stopAccessingSecurityScopedResource()
+        if let oldURL = splitSourceItem?.url {
+            scopeManager.stopAccessing(oldURL)
+        }
+
+        // セキュリティスコープアクセスを確保
+        guard scopeManager.startAccessing(url) else {
+            alertMessage = "ファイルへのアクセスが拒否されました。"
+            return
+        }
 
         do {
             let item = try PDFItem.create(from: url)

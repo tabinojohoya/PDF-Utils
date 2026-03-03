@@ -88,7 +88,6 @@ struct ContentView: View {
             case .split:
                 // 分割モードでは先頭1ファイルのみ採用
                 if let url = pdfURLs.first {
-                    guard url.startAccessingSecurityScopedResource() else { return false }
                     viewModel.setSplitSource(url: url)
                 }
             }
@@ -203,11 +202,7 @@ struct ContentView: View {
         ) { result in
             switch result {
             case .success(let urls):
-                let accessibleURLs = urls.compactMap { url -> URL? in
-                    guard url.startAccessingSecurityScopedResource() else { return nil }
-                    return url
-                }
-                viewModel.addFiles(urls: accessibleURLs)
+                viewModel.addFiles(urls: urls)
             case .failure(let error):
                 viewModel.alertMessage = error.localizedDescription
             }
