@@ -27,13 +27,13 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 600, minHeight: 400)
-        .animation(.easeInOut(duration: 0.25), value: viewModel.appMode)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: viewModel.appMode)
         .overlay(alignment: .top) { successBannerOverlay }
         .overlay { if viewModel.isDropTargeted { DropOverlayView() } }
         .dropDestination(for: URL.self) { urls, _ in
             handleDrop(urls: urls)
         } isTargeted: { targeted in
-            withAnimation(.easeInOut(duration: 0.2)) { viewModel.isDropTargeted = targeted }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) { viewModel.isDropTargeted = targeted }
         }
         .toolbar { toolbarContent }
         .fileImporter(
@@ -67,9 +67,9 @@ struct ContentView: View {
         case .merge:
             if viewModel.merge.isEmpty {
                 EmptyStateView(
-                    icon: "doc.richtext",
-                    title: "PDFファイルをここにドロップ",
-                    subtitle: "またはファイル追加ボタンで選択"
+                    icon: nil,
+                    title: "ここに、紙を。",
+                    subtitle: nil
                 )
             } else {
                 NavigationSplitView {
@@ -94,19 +94,19 @@ struct ContentView: View {
     private var successBannerOverlay: some View {
         if viewModel.merge.showSuccessBanner {
             SuccessBannerView(
-                message: "結合が完了しました",
+                message: "束ねました。",
                 accessibilityLabel: "結合完了通知",
                 onRevealInFinder: { viewModel.revealInFinder() },
-                onDismiss: { withAnimation(.easeOut(duration: 0.3)) { viewModel.merge.showSuccessBanner = false } }
+                onDismiss: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { viewModel.merge.showSuccessBanner = false } }
             )
             .padding(.top, 8)
         }
         if viewModel.split.showSuccessBanner {
             SuccessBannerView(
-                message: "\(viewModel.split.outputURLs.count)ファイルに分割しました",
+                message: "ほどきました。",
                 accessibilityLabel: "分割完了通知",
                 onRevealInFinder: { viewModel.revealSplitOutputInFinder() },
-                onDismiss: { withAnimation(.easeOut(duration: 0.3)) { viewModel.split.showSuccessBanner = false } }
+                onDismiss: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { viewModel.split.showSuccessBanner = false } }
             )
             .padding(.top, 8)
         }

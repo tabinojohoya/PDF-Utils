@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// 「PDF-Utilsについて」ウィンドウに表示するビュー
+/// 「Assembleについて」ウィンドウに表示するビュー
 struct AboutView: View {
     private let appVersion: String = {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
@@ -18,30 +18,34 @@ struct AboutView: View {
     }()
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable()
-                .frame(width: 96, height: 96)
+                .frame(width: 112, height: 112)
+                .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
 
-            Text("PDF-Utils")
-                .font(.title.bold())
+            VStack(spacing: 4) {
+                Text("Assemble")
+                    .font(.system(size: 28, weight: .bold, design: .default))
+                    .tracking(0.5)
+
+                Text("紙束を、ひとつに。")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
 
             Text("バージョン \(appVersion) (\(buildNumber))")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Text("PDFの結合・分割ユーティリティ")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
             Divider()
-                .frame(width: 200)
+                .frame(width: 180)
 
-            Text("© 2026 Soma Kosokabe")
+            Text("© 2026 Assemble Labs")
                 .font(.caption2)
                 .foregroundStyle(.quaternary)
         }
-        .padding(24)
+        .padding(32)
         .frame(width: 300)
     }
 }

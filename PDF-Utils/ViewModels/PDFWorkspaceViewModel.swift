@@ -111,7 +111,7 @@ final class PDFWorkspaceViewModel {
             scopeManager.stopAccessing(item.url)
         }
 
-        withAnimation(.easeOut(duration: 0.25)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             merge.pdfItems.removeAll { ids.contains($0.id) }
         }
 
@@ -136,7 +136,7 @@ final class PDFWorkspaceViewModel {
             scopeManager.stopAccessing(item.url)
         }
 
-        withAnimation(.easeOut(duration: 0.25)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             merge.pdfItems.removeAll()
             merge.selectedItemID = nil
             merge.selectedPageID = nil
@@ -153,7 +153,7 @@ final class PDFWorkspaceViewModel {
 
         for itemIndex in merge.pdfItems.indices {
             if let pageIndex = merge.pdfItems[itemIndex].pages.firstIndex(where: { $0.id == pageID }) {
-                withAnimation(.easeOut(duration: 0.2)) {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                     merge.pdfItems[itemIndex].pages[pageIndex].isIncluded.toggle()
                 }
                 dismissMergedPreview()
@@ -170,7 +170,7 @@ final class PDFWorkspaceViewModel {
         let allIncluded = merge.pdfItems[itemIndex].pages.allSatisfy(\.isIncluded)
         let newValue = !allIncluded
 
-        withAnimation(.easeOut(duration: 0.2)) {
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
             for pageIndex in merge.pdfItems[itemIndex].pages.indices {
                 merge.pdfItems[itemIndex].pages[pageIndex].isIncluded = newValue
             }
@@ -217,7 +217,7 @@ final class PDFWorkspaceViewModel {
 
         for itemIndex in merge.pdfItems.indices {
             if let pageIndex = merge.pdfItems[itemIndex].pages.firstIndex(where: { $0.id == pageID }) {
-                _ = withAnimation(.easeOut(duration: 0.25)) {
+                _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     merge.pdfItems[itemIndex].pages.remove(at: pageIndex)
                 }
                 if merge.selectedPageID == pageID {
@@ -232,7 +232,7 @@ final class PDFWorkspaceViewModel {
     /// 出力プレビューを解除する
     func dismissMergedPreview() {
         guard merge.isShowingMergedPreview else { return }
-        withAnimation(.easeInOut(duration: 0.25)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
             merge.isShowingMergedPreview = false
         }
     }
@@ -314,7 +314,7 @@ final class PDFWorkspaceViewModel {
                 merge.mergedFileSizeString = "–"
             }
 
-            withAnimation(.easeInOut(duration: 0.3)) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 merge.isShowingMergedPreview = true
             }
 
@@ -322,7 +322,7 @@ final class PDFWorkspaceViewModel {
             bannerDismissTask = Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .seconds(5))
                 guard !Task.isCancelled else { return }
-                withAnimation(.easeOut(duration: 0.5)) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                     self?.merge.showSuccessBanner = false
                 }
             }
@@ -403,7 +403,7 @@ final class PDFWorkspaceViewModel {
             splitBannerDismissTask = Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .seconds(5))
                 guard !Task.isCancelled else { return }
-                withAnimation(.easeOut(duration: 0.5)) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                     self?.split.showSuccessBanner = false
                 }
             }

@@ -43,7 +43,7 @@ struct SuccessBannerView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
         .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
         .padding(.horizontal, 20)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .transition(.move(edge: .top).combined(with: .opacity).combined(with: .scale(scale: 0.98)))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(accessibilityLabel)
     }

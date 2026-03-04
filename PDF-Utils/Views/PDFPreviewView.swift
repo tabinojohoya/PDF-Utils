@@ -76,7 +76,7 @@ struct PDFPreviewPane: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.easeInOut(duration: 0.2), value: selectedItem?.id)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: selectedItem?.id)
     }
 
     private var emptyPreview: some View {

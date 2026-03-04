@@ -39,7 +39,7 @@ struct PDF_UtilsApp: App {
         .commands {
             // 標準の「About」メニューを置き換え
             CommandGroup(replacing: .appInfo) {
-                Button("PDF-Utilsについて") {
+                Button("Assembleについて") {
                     NSApp.orderFrontStandardAboutPanel(options: [
                         .applicationVersion: appVersion,
                         .version: buildNumber,

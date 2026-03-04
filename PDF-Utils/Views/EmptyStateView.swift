@@ -8,32 +8,39 @@
 import SwiftUI
 
 /// 空状態ビュー（結合・分割共通、メッセージ引数化）
+///
+/// `icon` を `nil` にするとテキストのみの静かな空状態になる。
 struct EmptyStateView: View {
-    let icon: String
+    let icon: String?
     let title: String
-    let subtitle: String
+    let subtitle: String?
 
     var body: some View {
         VStack(spacing: 16) {
             Spacer()
 
-            Image(systemName: icon)
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 48))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
 
             Text(title)
-                .font(.title2)
-                .fontWeight(.medium)
+                .font(icon == nil ? .title : .title2)
+                .fontWeight(icon == nil ? .light : .medium)
+                .foregroundStyle(icon == nil ? .secondary : .primary)
 
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title)。\(subtitle)")
+        .accessibilityLabel("\(title)\(subtitle.map { "。\($0)" } ?? "")")
     }
 }
