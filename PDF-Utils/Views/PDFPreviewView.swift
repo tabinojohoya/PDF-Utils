@@ -57,12 +57,10 @@ struct PDFPreviewPane: View {
                     HStack {
                         Spacer()
                         Picker("表示", selection: $vm.previewDisplayMode) {
-                            Image(systemName: "doc")
+                            Label("単一ページ", systemImage: "doc")
                                 .tag(PreviewDisplayMode.singlePage)
-                                .accessibilityLabel("単一ページ")
-                            Image(systemName: "rectangle.split.1x2")
+                            Label("連続スクロール", systemImage: "rectangle.split.1x2")
                                 .tag(PreviewDisplayMode.continuous)
-                                .accessibilityLabel("連続スクロール")
                         }
                         .pickerStyle(.segmented)
                         .frame(width: 80)

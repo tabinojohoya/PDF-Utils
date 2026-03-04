@@ -14,16 +14,16 @@
         "comment": "",
         "key": "単一ページ",
         "location": {
-          "startingColumn": 53,
-          "startingLine": 62
+          "startingColumn": 35,
+          "startingLine": 60
         }
       },
       {
         "comment": "",
         "key": "連続スクロール",
         "location": {
-          "startingColumn": 53,
-          "startingLine": 65
+          "startingColumn": 35,
+          "startingLine": 62
         }
       },
       {
@@ -31,7 +31,7 @@
         "key": "プレビュー領域。PDFを選択してください",
         "location": {
           "startingColumn": 29,
-          "startingLine": 97
+          "startingLine": 95
         }
       },
       {
@@ -39,7 +39,7 @@
         "key": "PDFを選択してプレビュー",
         "location": {
           "startingColumn": 18,
-          "startingLine": 91
+          "startingLine": 89
         }
       }
     ]

@@ -7,7 +7,6 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-import AppKit
 
 struct ContentView: View {
     @Environment(PDFWorkspaceViewModel.self) var viewModel

@@ -172,10 +172,13 @@ struct ZeroPagesWarningView: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.caption)
                     .foregroundStyle(.yellow)
+                    .accessibilityHidden(true)
                 Text("0ページのファイルがあります")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("警告: 0ページのファイルがあります")
         }
     }
 }

@@ -319,11 +319,11 @@ final class PDFWorkspaceViewModel {
             }
 
             bannerDismissTask?.cancel()
-            bannerDismissTask = Task { @MainActor in
+            bannerDismissTask = Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .seconds(5))
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeOut(duration: 0.5)) {
-                    self.merge.showSuccessBanner = false
+                    self?.merge.showSuccessBanner = false
                 }
             }
         } catch {
@@ -400,11 +400,11 @@ final class PDFWorkspaceViewModel {
             split.showSuccessBanner = true
 
             splitBannerDismissTask?.cancel()
-            splitBannerDismissTask = Task { @MainActor in
+            splitBannerDismissTask = Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .seconds(5))
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeOut(duration: 0.5)) {
-                    self.split.showSuccessBanner = false
+                    self?.split.showSuccessBanner = false
                 }
             }
         } catch {

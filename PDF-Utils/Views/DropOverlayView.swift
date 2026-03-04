@@ -35,6 +35,7 @@ struct DropOverlayView: View {
         }
         .transition(.opacity)
         .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
