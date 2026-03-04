@@ -48,6 +48,9 @@ final class PDFWorkspaceViewModel {
     /// ドラッグ中にウィンドウ上にファイルがあるか
     var isDropTargeted: Bool = false
 
+    /// プレビュー表示モード（singlePage / continuous）
+    var previewDisplayMode: PreviewDisplayMode = .singlePage
+
     // MARK: - Computed Properties
 
     /// 処理中か（結合または分割）
