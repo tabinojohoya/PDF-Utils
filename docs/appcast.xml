@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>PDF-Utils Updates</title>
+        <description>PDF-Utils の最新アップデート情報</description>
+        <language>ja</language>
+        <!-- generate_appcast コマンドで自動更新されます -->
+    </channel>
+</rss>

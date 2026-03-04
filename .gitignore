@@ -1,1 +1,15 @@
 REQUIREMENTS.md
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# App bundle (built product)
+PDF-Utils.app/
