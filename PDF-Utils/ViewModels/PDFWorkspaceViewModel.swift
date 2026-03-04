@@ -428,21 +428,18 @@ final class PDFWorkspaceViewModel {
         guard let index = merge.pdfItems.firstIndex(where: { $0.id == itemID }) else { return }
         let url = merge.pdfItems[index].url
 
-        Task.detached(priority: .userInitiated) { [weak self] in
+        Task {
             let thumbnails = await ThumbnailGenerator.generateAll(
                 from: url,
                 size: PageItem.thumbnailSize
             )
 
-            await MainActor.run {
-                guard let self,
-                      let itemIdx = self.merge.pdfItems.firstIndex(where: { $0.id == itemID })
-                else { return }
+            guard let itemIdx = merge.pdfItems.firstIndex(where: { $0.id == itemID })
+            else { return }
 
-                for (pageIndex, image) in thumbnails {
-                    guard pageIndex < self.merge.pdfItems[itemIdx].pages.count else { continue }
-                    self.merge.pdfItems[itemIdx].pages[pageIndex].thumbnail = image
-                }
+            for (pageIndex, image) in thumbnails {
+                guard pageIndex < merge.pdfItems[itemIdx].pages.count else { continue }
+                merge.pdfItems[itemIdx].pages[pageIndex].thumbnail = image
             }
         }
     }

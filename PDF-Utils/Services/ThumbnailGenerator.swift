@@ -10,6 +10,9 @@ import PDFKit
 import AppKit
 
 /// PDFページのサムネイルを生成するユーティリティ
+///
+/// PDFPage は MainActor 分離のため、サムネイル生成も MainActor 上で実行する。
+/// バッチ生成時は `Task.yield()` で定期的に制御を返し、UIブロッキングを防ぐ。
 enum ThumbnailGenerator {
 
     /// 指定ページのサムネイルを生成する
@@ -24,33 +27,9 @@ enum ThumbnailGenerator {
         size: NSSize
     ) -> NSImage {
         guard let page = document.page(at: pageIndex) else {
-            return NSImage(size: size)
+            return placeholderImage(size: size)
         }
-
-        let pageRect = page.bounds(for: .mediaBox)
-        let scale = min(
-            size.width / pageRect.width,
-            size.height / pageRect.height
-        )
-
-        let scaledWidth = pageRect.width * scale
-        let scaledHeight = pageRect.height * scale
-        let offsetX = (size.width - scaledWidth) / 2
-        let offsetY = (size.height - scaledHeight) / 2
-
-        let image = NSImage(size: size, flipped: false) { _ in
-            NSColor.white.setFill()
-            NSRect(origin: .zero, size: size).fill()
-
-            guard let context = NSGraphicsContext.current?.cgContext else { return false }
-            context.saveGState()
-            context.translateBy(x: offsetX, y: offsetY)
-            context.scaleBy(x: scale, y: scale)
-            page.draw(with: .mediaBox, to: context)
-            context.restoreGState()
-            return true
-        }
-        return image
+        return generate(from: page, size: size)
     }
 
     /// PDFPage から直接サムネイルを生成する
@@ -70,24 +49,42 @@ enum ThumbnailGenerator {
         let offsetX = (size.width - scaledWidth) / 2
         let offsetY = (size.height - scaledHeight) / 2
 
-        let image = NSImage(size: size, flipped: false) { _ in
-            NSColor.white.setFill()
-            NSRect(origin: .zero, size: size).fill()
-
-            guard let context = NSGraphicsContext.current?.cgContext else { return false }
-            context.saveGState()
-            context.translateBy(x: offsetX, y: offsetY)
-            context.scaleBy(x: scale, y: scale)
-            page.draw(with: .mediaBox, to: context)
-            context.restoreGState()
-            return true
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let context = CGContext(
+            data: nil,
+            width: Int(size.width),
+            height: Int(size.height),
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return placeholderImage(size: size)
         }
-        return image
+
+        // 白背景
+        context.setFillColor(.white)
+        context.fill(CGRect(origin: .zero, size: size))
+
+        // PDFページ描画
+        context.saveGState()
+        context.translateBy(x: offsetX, y: offsetY)
+        context.scaleBy(x: scale, y: scale)
+        page.draw(with: .mediaBox, to: context)
+        context.restoreGState()
+
+        guard let cgImage = context.makeImage() else {
+            return placeholderImage(size: size)
+        }
+        return NSImage(cgImage: cgImage, size: size)
     }
 
     // MARK: - Async Batch Generation
 
-    /// 全ページのサムネイルをバックグラウンドで一括生成し、1ページずつコールバックする
+    /// 全ページのサムネイルを一括生成する
+    ///
+    /// MainActor 上で実行し、5ページごとに `Task.yield()` で
+    /// UIスレッドに制御を返してブロッキングを防ぐ。
     /// - Parameters:
     ///   - url: PDFファイルのURL
     ///   - size: 出力サムネイルサイズ
@@ -96,16 +93,25 @@ enum ThumbnailGenerator {
         from url: URL,
         size: NSSize
     ) async -> [Int: NSImage] {
-        await Task.detached(priority: .userInitiated) {
-            guard let document = PDFDocument(url: url) else {
-                return [Int: NSImage]()
+        guard let document = PDFDocument(url: url) else {
+            return [Int: NSImage]()
+        }
+        var results = [Int: NSImage]()
+        results.reserveCapacity(document.pageCount)
+        for i in 0..<document.pageCount {
+            results[i] = generate(from: document, pageIndex: i, size: size)
+            // 定期的にyieldしてUIをブロックしない
+            if i % 5 == 4 {
+                await Task.yield()
             }
-            var results = [Int: NSImage]()
-            results.reserveCapacity(document.pageCount)
-            for i in 0..<document.pageCount {
-                results[i] = generate(from: document, pageIndex: i, size: size)
-            }
-            return results
-        }.value
+        }
+        return results
+    }
+
+    // MARK: - Private
+
+    /// 空のプレースホルダー画像を生成する
+    private static func placeholderImage(size: NSSize) -> NSImage {
+        NSImage(size: size)
     }
 }

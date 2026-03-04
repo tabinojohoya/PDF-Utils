@@ -198,18 +198,9 @@ struct SplitPreviewView: View {
     /// 全ページのサムネイルを非同期生成
     private func generateAllThumbnails(url: URL) {
         let size = Self.thumbnailSize
-        Task.detached(priority: .userInitiated) {
-            guard let document = PDFDocument(url: url) else { return }
-            let totalPages = document.pageCount
-
-            for pageIndex in 0..<totalPages {
-                guard let page = document.page(at: pageIndex) else { continue }
-                let thumbnail = ThumbnailGenerator.generate(from: page, size: size)
-
-                await MainActor.run {
-                    pageThumbnails[pageIndex] = thumbnail
-                }
-            }
+        Task {
+            let thumbnails = await ThumbnailGenerator.generateAll(from: url, size: size)
+            pageThumbnails = thumbnails
         }
     }
 }
