@@ -189,6 +189,28 @@ final class PDFWorkspaceViewModel {
         dismissMergedPreview()
     }
 
+    /// ファイル間でページを移動する
+    func movePageBetweenFiles(
+        pageID: PageItem.ID,
+        fromFileID: PDFItem.ID,
+        toFileID: PDFItem.ID,
+        insertionIndex: Int
+    ) {
+        guard !merge.isMerging else { return }
+        guard let srcIdx = merge.pdfItems.firstIndex(where: { $0.id == fromFileID }),
+              let pageIdx = merge.pdfItems[srcIdx].pages.firstIndex(where: { $0.id == pageID }),
+              let dstIdx = merge.pdfItems.firstIndex(where: { $0.id == toFileID })
+        else { return }
+
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            var page = merge.pdfItems[srcIdx].pages.remove(at: pageIdx)
+            page.parentID = toFileID
+            let clampedIndex = min(insertionIndex, merge.pdfItems[dstIdx].pages.count)
+            merge.pdfItems[dstIdx].pages.insert(page, at: clampedIndex)
+        }
+        dismissMergedPreview()
+    }
+
     /// ページを削除する
     func deletePage(pageID: PageItem.ID) {
         guard !merge.isMerging else { return }

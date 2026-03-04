@@ -12,7 +12,7 @@ import AppKit
 /// PDFの1ページを表すモデル
 struct PageItem: Identifiable, Hashable {
     let id = UUID()
-    let parentID: PDFItem.ID
+    var parentID: PDFItem.ID
     let pageIndex: Int
     /// サムネイル画像（nil = 未生成、非同期でロードされる）
     var thumbnail: NSImage?

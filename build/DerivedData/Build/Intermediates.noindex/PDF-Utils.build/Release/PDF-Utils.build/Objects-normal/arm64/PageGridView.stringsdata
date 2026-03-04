@@ -15,7 +15,7 @@
         "key": "全ページを除外",
         "location": {
           "startingColumn": 35,
-          "startingLine": 79
+          "startingLine": 82
         }
       },
       {
@@ -23,7 +23,7 @@
         "key": "全ページを選択",
         "location": {
           "startingColumn": 35,
-          "startingLine": 80
+          "startingLine": 83
         }
       },
       {
@@ -31,7 +31,7 @@
         "key": "%lld/%lldページ",
         "location": {
           "startingColumn": 22,
-          "startingLine": 58
+          "startingLine": 61
         }
       },
       {
@@ -39,7 +39,7 @@
         "key": "0ページのファイルがあります",
         "location": {
           "startingColumn": 22,
-          "startingLine": 144
+          "startingLine": 175
         }
       }
     ]

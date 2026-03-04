@@ -42,6 +42,9 @@ struct PageGridView: View {
         }
         .padding(.horizontal, 8)
         .disclosureGroupStyle(.automatic)
+        .dropDestination(for: String.self) { droppedItems, _ in
+            handleCrossFileDrop(droppedItems: droppedItems, targetFileID: item.id)
+        } isTargeted: { _ in }
     }
 
     // MARK: - File Section Header
@@ -119,6 +122,34 @@ struct PageGridView: View {
                 viewModel.movePage(from: source, to: destination, in: item.id)
             }
         }
+    }
+
+    // MARK: - Cross-File Drop
+
+    /// ファイル間ページドロップを処理する
+    private func handleCrossFileDrop(droppedItems: [String], targetFileID: PDFItem.ID) -> Bool {
+        guard let pageIDString = droppedItems.first,
+              let pageID = UUID(uuidString: pageIDString) else { return false }
+
+        // ドロップ元のファイルを特定
+        guard let sourceItem = viewModel.merge.pdfItems.first(where: { item in
+            item.pages.contains(where: { $0.id == pageID })
+        }) else { return false }
+
+        // 同一ファイル内のドロップは .onMove に任せる
+        guard sourceItem.id != targetFileID else { return false }
+
+        // ターゲットファイルの末尾に挿入
+        let targetItem = viewModel.merge.pdfItems.first(where: { $0.id == targetFileID })
+        let insertionIndex = targetItem?.pages.count ?? 0
+
+        viewModel.movePageBetweenFiles(
+            pageID: pageID,
+            fromFileID: sourceItem.id,
+            toFileID: targetFileID,
+            insertionIndex: insertionIndex
+        )
+        return true
     }
 }
 
