@@ -73,10 +73,25 @@
     "llvm-bc" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SplitState.bc",
     "object" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SplitState.o"
   },
+  "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/ContentView+Toolbar.swift" : {
+    "index-unit-output-path" : "/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/ContentView+Toolbar.o",
+    "llvm-bc" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/ContentView+Toolbar.bc",
+    "object" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/ContentView+Toolbar.o"
+  },
   "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/DropOverlayView.swift" : {
     "index-unit-output-path" : "/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/DropOverlayView.o",
     "llvm-bc" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/DropOverlayView.bc",
     "object" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/DropOverlayView.o"
+  },
+  "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/EmptyStateView.swift" : {
+    "index-unit-output-path" : "/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/EmptyStateView.o",
+    "llvm-bc" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/EmptyStateView.bc",
+    "object" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/EmptyStateView.o"
+  },
+  "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/MergeStatusBar.swift" : {
+    "index-unit-output-path" : "/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/MergeStatusBar.o",
+    "llvm-bc" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/MergeStatusBar.bc",
+    "object" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/MergeStatusBar.o"
   },
   "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/MergedPreviewView.swift" : {
     "index-unit-output-path" : "/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/MergedPreviewView.o",
@@ -117,6 +132,16 @@
     "index-unit-output-path" : "/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SplitPreviewView.o",
     "llvm-bc" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SplitPreviewView.bc",
     "object" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SplitPreviewView.o"
+  },
+  "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/SplitStatusBar.swift" : {
+    "index-unit-output-path" : "/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SplitStatusBar.o",
+    "llvm-bc" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SplitStatusBar.bc",
+    "object" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SplitStatusBar.o"
+  },
+  "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/SuccessBannerView.swift" : {
+    "index-unit-output-path" : "/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SuccessBannerView.o",
+    "llvm-bc" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SuccessBannerView.bc",
+    "object" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/SuccessBannerView.o"
   },
   "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/DerivedSources/GeneratedAssetSymbols.swift" : {
     "index-unit-output-path" : "/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/GeneratedAssetSymbols.o",

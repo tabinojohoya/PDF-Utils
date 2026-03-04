@@ -1,0 +1,24 @@
+{
+  "source": "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/MergeStatusBar.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "結合の進捗",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 35
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldパーセント",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 36
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -9,8 +9,11 @@
 /Users/soma/Apps/PDF-Utils/PDF-Utils/ViewModels/MergeState.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/ViewModels/PDFWorkspaceViewModel.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/ViewModels/SplitState.swift
+/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/ContentView+Toolbar.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/Views/DropOverlayView.swift
+/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/EmptyStateView.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/Views/MergedPreviewView.swift
+/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/MergeStatusBar.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/Views/PageGridView.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/Views/PageThumbnailView.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/Views/PDFListRowView.swift
@@ -18,6 +21,8 @@
 /Users/soma/Apps/PDF-Utils/PDF-Utils/Views/PDFPreviewView.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/Views/SplitConfigView.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/Views/SplitPreviewView.swift
+/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/SplitStatusBar.swift
+/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/SuccessBannerView.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/ContentView.swift
 /Users/soma/Apps/PDF-Utils/PDF-Utils/PDF_UtilsApp.swift
 /Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/DerivedSources/GeneratedAssetSymbols.swift
