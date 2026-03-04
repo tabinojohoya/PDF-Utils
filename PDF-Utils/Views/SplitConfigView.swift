@@ -10,7 +10,7 @@ import UniformTypeIdentifiers
 
 /// 分割モードの左ペイン — ファイル情報 + 分割設定UI
 struct SplitConfigView: View {
-    @Environment(PDFMergeViewModel.self) private var viewModel
+    @Environment(PDFWorkspaceViewModel.self) private var viewModel
     @State private var isSplitFileImporterPresented = false
 
     var body: some View {
@@ -19,7 +19,7 @@ struct SplitConfigView: View {
         List {
             // MARK: - ファイル情報セクション
             Section {
-                if let source = viewModel.splitSourceItem {
+                if let source = viewModel.split.sourceItem {
                     sourceFileRow(item: source)
                 } else {
                     emptySourceView
@@ -29,9 +29,9 @@ struct SplitConfigView: View {
             }
 
             // MARK: - 分割設定セクション（ファイル選択済みの場合のみ）
-            if viewModel.splitSourceItem != nil {
+            if viewModel.split.sourceItem != nil {
                 Section {
-                    Picker("分割方法", selection: $vm.splitConfig.method) {
+                    Picker("分割方法", selection: $vm.split.config.method) {
                         Text("ページ範囲指定")
                             .accessibilityLabel("ページ範囲を指定して分割")
                             .tag(SplitMethod.pageRanges)
@@ -43,26 +43,26 @@ struct SplitConfigView: View {
                             .tag(SplitMethod.oddEven)
                     }
                     .pickerStyle(.radioGroup)
-                    .disabled(viewModel.isSplitting)
+                    .disabled(viewModel.split.isSplitting)
                     .accessibilityLabel("分割方法の選択")
                 } header: {
                     Text("分割方法")
                 }
 
                 // MARK: - ページ範囲入力（pageRanges 選択時のみ）
-                if viewModel.splitConfig.method == .pageRanges {
+                if viewModel.split.config.method == .pageRanges {
                     Section {
                         HStack(alignment: .top) {
                             TextField(
-                                "1-5, 6-10, 11-\(viewModel.splitSourceItem?.pageCount ?? 1)",
-                                text: $vm.splitConfig.rangeText
+                                "1-5, 6-10, 11-\(viewModel.split.sourceItem?.pageCount ?? 1)",
+                                text: $vm.split.config.rangeText
                             )
                             .textFieldStyle(.roundedBorder)
-                            .disabled(viewModel.isSplitting)
+                            .disabled(viewModel.split.isSplitting)
                             .accessibilityLabel("分割ページ範囲")
                             .accessibilityHint(validationHint)
 
-                            Text("/ \(viewModel.splitSourceItem?.pageCount ?? 0)ページ")
+                            Text("/ \(viewModel.split.sourceItem?.pageCount ?? 0)ページ")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .frame(minWidth: 60, alignment: .trailing)
@@ -93,7 +93,7 @@ struct SplitConfigView: View {
                 } label: {
                     Label("ファイル選択", systemImage: "doc.badge.plus")
                 }
-                .disabled(viewModel.isSplitting)
+                .disabled(viewModel.split.isSplitting)
                 .accessibilityLabel("分割対象のPDFファイルを選択")
                 .accessibilityHint("ファイル選択ダイアログを開きます")
             }
@@ -106,13 +106,9 @@ struct SplitConfigView: View {
             switch result {
             case .success(let urls):
                 guard let url = urls.first else { return }
-                guard url.startAccessingSecurityScopedResource() else {
-                    viewModel.alertMessage = "ファイルへのアクセスが拒否されました。"
-                    return
-                }
                 viewModel.setSplitSource(url: url)
             case .failure(let error):
-                viewModel.alertMessage = error.localizedDescription
+                viewModel.currentError = .from(error)
             }
         }
         .navigationTitle("分割設定")
@@ -177,7 +173,7 @@ struct SplitConfigView: View {
 
     @ViewBuilder
     private var splitSummarySection: some View {
-        if case .success(let groups) = viewModel.splitGroups {
+        if case .success(let groups) = viewModel.split.splitGroups {
             Section {
                 Label(
                     "\(groups.count)ファイルに分割されます",
@@ -195,10 +191,10 @@ struct SplitConfigView: View {
 
     /// バリデーションエラーメッセージ（nilならエラーなし）
     private var validationErrorMessage: String? {
-        guard viewModel.splitConfig.method == .pageRanges else { return nil }
-        guard !viewModel.splitConfig.rangeText.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        guard viewModel.split.config.method == .pageRanges else { return nil }
+        guard !viewModel.split.config.rangeText.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
 
-        if case .failure(let error) = viewModel.splitGroups {
+        if case .failure(let error) = viewModel.split.splitGroups {
             return error.localizedDescription
         }
         return nil

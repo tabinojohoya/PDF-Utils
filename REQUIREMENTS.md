@@ -9,7 +9,7 @@
 | 開発言語 | Swift 5 (Swift 6 Concurrency対応) |
 | UIフレームワーク | SwiftUI |
 | 開発環境 | Xcode 26.2 |
-| バンドルID | com.example.PDF-Utils |
+| バンドルID | com.soma.PDF-Utils |
 | 最小動作OS | macOS 26.2 |
 
 ## 2. アプリの目的
@@ -85,7 +85,7 @@
 | 概要 | アプリの動作モードを「結合」と「分割」で切り替えられる |
 | 操作方法 | ツールバーのセグメントコントロール（`Picker` with `.segmented`） |
 | デフォルト | 結合モード |
-| 切替時の挙動 | モード切替時にファイルリスト・選択状態はリセットされる |
+| 切替時の挙動 | モード切替時にファイルリスト・選択状態は保持される（処理中の切替は無効） |
 | 視覚フィードバック | 選択中のモードがハイライトされ、UIが対応レイアウトに遷移 |
 
 ### 3.9 分割対象PDFの選択 (FR-009)
@@ -180,21 +180,35 @@
 PDF-Utils/
 ├── PDF_UtilsApp.swift          # アプリエントリポイント
 ├── Models/
-│   ├── PDFItem.swift            # PDFファイルモデル（ファイル情報保持）
-│   └── SplitConfig.swift        # 分割設定モデル（方式・範囲）
+│   ├── AppError.swift            # 構造化エラー型
+│   ├── PDFItem.swift              # PDFファイルモデル（ファイル情報保持）
+│   ├── PageItem.swift             # ページ単位モデル
+│   └── SplitConfig.swift          # 分割設定モデル（方式・範囲）
 ├── ViewModels/
-│   └── PDFMergeViewModel.swift  # 結合・分割ロジック・状態管理
+│   ├── PDFWorkspaceViewModel.swift  # ワークスペース管理・共通操作
+│   ├── MergeState.swift             # 結合モード状態
+│   └── SplitState.swift             # 分割モード状態
 ├── Views/
-│   ├── ContentView.swift        # メインレイアウト（Split View）
-│   ├── PDFListView.swift        # PDF一覧（左ペイン・結合モード）
-│   ├── PDFListRowView.swift     # 一覧の各行
-│   ├── PDFPreviewView.swift     # プレビュー（右ペイン）
-│   ├── DropOverlayView.swift    # ドラッグ&ドロップオーバーレイ
-│   ├── SplitConfigView.swift    # 分割設定UI（左ペイン・分割モード）
-│   └── SplitPreviewView.swift   # 分割プレビュー（右ペイン・分割モード）
+│   ├── ContentView+Toolbar.swift  # ツールバー定義・パネルアクション
+│   ├── ContentView.swift          # メインレイアウト（Split View）
+│   ├── DropOverlayView.swift      # ドラッグ&ドロップオーバーレイ
+│   ├── EmptyStateView.swift       # 空状態の案内表示
+│   ├── MergeStatusBar.swift       # 結合モードステータスバー
+│   ├── MergedPreviewView.swift    # 結合結果プレビュー
+│   ├── PDFListRowView.swift       # 一覧の各行
+│   ├── PDFListView.swift          # PDF一覧（左ペイン・結合モード）
+│   ├── PDFPreviewView.swift       # プレビュー（右ペイン）
+│   ├── PageGridView.swift         # ページサムネイルグリッド
+│   ├── PageThumbnailView.swift    # 個別ページサムネイル
+│   ├── SplitConfigView.swift      # 分割設定UI（左ペイン・分割モード）
+│   ├── SplitPreviewView.swift     # 分割プレビュー（右ペイン・分割モード）
+│   ├── SplitStatusBar.swift       # 分割モードステータスバー
+│   └── SuccessBannerView.swift    # 成功バナー
 ├── Services/
-│   ├── PDFMergeService.swift    # PDF結合エンジン（PDFKit使用）
-│   └── PDFSplitService.swift    # PDF分割エンジン（PDFKit使用）
+│   ├── PDFMergeService.swift      # PDF結合エンジン（PDFKit使用）
+│   ├── PDFSplitService.swift      # PDF分割エンジン（PDFKit使用）
+│   ├── SecurityScopeManager.swift # セキュリティスコープURL管理
+│   └── ThumbnailGenerator.swift   # サムネイル生成（非同期・キャッシュ）
 └── Assets.xcassets/
 ```
 
@@ -215,7 +229,8 @@ PDF-Utils/
 // 概要: PDFKit の PDFDocument を使用
 // 1. 各PDFファイルを PDFDocument として読み込み
 // 2. 新規 PDFDocument を作成
-// 3. 各ソースの全ページを順番に insert
+// 3. 各ソースの含まれるページ（PageItem.isIncluded == true）のみを順番に insert
+//    - ページ単位の除外・並び替えが反映される
 // 4. 結合後の PDFDocument を write で保存
 ```
 
@@ -255,7 +270,7 @@ struct SplitConfig {
 
 ### 5.6 状態管理
 
-- `@Observable` クラス（`PDFMergeViewModel`）で一元管理
+- `@Observable` クラス（`PDFWorkspaceViewModel` + `MergeState` + `SplitState`）で一元管理
 - `appMode: AppMode`（`.merge` / `.split`）でモード状態を保持
 - 分割モード時: `splitSourceItem: PDFItem?`, `splitConfig: SplitConfig` を追加管理
 - SwiftData は使用しない（セッション内の一時データのみ）
@@ -484,7 +499,7 @@ SF Symbolsのみ使用。サードパーティアイコンは一切不要。
 | 要素 | 仕様 |
 |------|------|
 | 実装 | `PDFView` を `NSViewRepresentable` でラップ |
-| 表示モード | `.singlePage` をデフォルト、ユーザーが連続スクロールに切替可能 |
+| 表示モード | `.singlePage` をデフォルト、右上のトグルで singlePage ↔ continuous を切替 |
 | 自動フィット | `.autoScales = true` でペインサイズに自動フィット |
 | ページ遷移 | PDFView標準のスクロール / スワイプ |
 | 未選択時 | 薄いグレー背景 + 「PDFを選択してプレビュー」テキスト（`.secondary`） |
@@ -764,9 +779,8 @@ SF Symbolsのみ使用。サードパーティアイコンは一切不要。
 | ⌘ O | ファイル追加ダイアログを開く（両モード共通） |
 | ⌘ S | PDF結合を実行（結合モード） / PDF分割を実行（分割モード） |
 | ⌘ ⌫ | 選択中のファイルをリストから削除（結合モード） |
-| ⌘ A | リスト内の全ファイルを選択（結合モード） |
-| ⌘ 1 | 結合モードに切替 |
-| ⌘ 2 | 分割モードに切替 |
+| ⌘ 1 | ファイルビューに切替（結合モード内） |
+| ⌘ 2 | ページビューに切替（結合モード内） |
 
 ## 10. 制約事項・前提条件
 
@@ -884,7 +898,7 @@ class PDFMergeViewModel {
     // --- 算出プロパティ ---
     var totalPageCount: Int
     var isEmpty: Bool
-    var canMerge: Bool  // items.count >= 2
+    var canMerge: Bool  // includedPageCount >= 2（結合対象ページが2ページ以上）
     var selectedItem: PDFItem?
 
     // --- 操作 ---
@@ -1107,7 +1121,7 @@ struct PDF_UtilsApp: App {
 | 2 | 破損PDFの追加 | `PDFDocument(url:)` が `nil` → エラーAlert表示、リストに追加しない |
 | 3 | パスワード付きPDF | `isLocked == true` → Alert表示「{ファイル名}はパスワードで保護されています」 |
 | 4 | 同一ファイルの重複追加 | URLの重複チェック → 既に追加済みの場合はスキップ+通知 |
-| 5 | 結合対象が1件のみ | 結合ボタンを無効化（`canMerge = items.count >= 2`） |
+| 5 | 結合対象ページが不足 | 結合ボタンを無効化（`canMerge = includedPageCount >= 2`） |
 | 6 | 結合中のUI操作 | `isMerging` 中はツールバーボタンを `.disabled(true)` |
 | 7 | 保存先の書き込み権限なし | `PDFMergeError.writeFailed` → エラーAlert |
 
@@ -1530,7 +1544,857 @@ Step 8   エラーハンドリング + アクセシビリティ
 | 8 | エラーハンドリング + ポリッシュ | 30分 |
 | | **合計** | **約4時間** |
 
-## 13. 将来の拡張候補（v2以降）
+## 13. 実装手順（v1.3.0 品質改善・機能強化）
+
+> *"Details matter, it's worth waiting to get it right."* — Steve Jobs
+
+v1.3.0 はメジャーバージョン v2.0.0 への布石である。新機能の追加よりも**構造の是正**と**既存体験の底上げ**に集中する。
+全12ステップ。各ステップ完了時にビルド確認を行い、既存の結合・分割機能に一切の回帰を発生させないこと。
+
+### 問題一覧と対応マップ
+
+| # | 優先度 | 問題 | 対応ステップ |
+|---|--------|------|-------------|
+| 1 | P3 | 空の `Views/` フォルダがルートに存在 | Step 1 |
+| 2 | P3 | バンドルIDが `com.example` のまま | Step 1 |
+| 3 | P2 | ThumbnailGenerator と SplitPreviewView にサムネイル描画ロジックが重複 | Step 2 |
+| 4 | P0 | `PDFItem.create()` が全ページサムネイルを同期生成しUIをブロック | Step 3 |
+| 5 | P0 | セキュリティスコープURLのライフサイクル管理が不完全 | Step 4 |
+| 6 | P1 | エラーが全て「エラー」タイトル。回復手段の提示なし | Step 5 |
+| 7 | P0 | `PDFMergeViewModel` が515行の God ViewModel | Step 6 |
+| 8 | P1 | `ContentView` が463行。バナー・ステータスバーが重複コピペ | Step 7 |
+| 9 | P2 | `⌘1` / `⌘2` / `⌘A` キーボードショートカット未実装 | Step 8 |
+| 10 | P2 | PDFプレビューの表示モード切替UI（singlePage ↔ continuous）がない | Step 9 |
+| 11 | P1 | ファイル間ページドラッグ&ドロップが未対応 | Step 10 |
+| 12 | P2 | REQUIREMENTS.md とコードの矛盾（モード切替時のリセット挙動 等） | Step 11 |
+| 13 | — | リリースポリッシュ | Step 12 |
+
+---
+
+### Step 1: プロジェクトクリーンアップ — 不要ファイル除去・バンドルID修正
+
+**目的**: プロジェクトの衛生状態を整える。5分で終わる。だが5分を惜しんで放置するな。
+
+**対応項目**:
+
+| # | 操作 | 対象 |
+|---|------|------|
+| 1 | 削除 | ルートの空 `Views/` ディレクトリ |
+| 2 | 変更 | バンドルIDを `com.example.PDF-Utils` → 正式なID（例: `com.soma.PDF-Utils`）に変更 |
+| 3 | 確認 | `Info.plist` / `project.pbxproj` 内のバンドルID参照を全て更新 |
+
+**完了条件**: ビルド成功。ルートに不要な `Views/` が存在しない。バンドルIDが `com.example` を含まない。
+
+---
+
+### Step 2: ThumbnailGenerator 統一 — 重複ロジックの排除
+
+**目的**: サムネイル描画ロジックを `ThumbnailGenerator` に一本化する
+
+**問題の所在**:
+- `Services/ThumbnailGenerator.swift` — 正規のサムネイル生成
+- `Views/SplitPreviewView.swift` 内の `renderThumbnail(from:)` — **完全に同じロジックのコピペ**
+
+**変更内容**:
+
+`Services/ThumbnailGenerator.swift`:
+```swift
+enum ThumbnailGenerator {
+    /// 既存の generate(from:pageIndex:size:) はそのまま維持
+
+    /// PDFPage から直接サムネイルを生成する（SplitPreviewView 等で使用）
+    static func generate(from page: PDFPage, size: NSSize) -> NSImage {
+        // SplitPreviewView.renderThumbnail の内容をここに移動
+    }
+}
+```
+
+`Views/SplitPreviewView.swift`:
+- `renderThumbnail(from:)` メソッドを削除
+- `generateAllThumbnails` 内の呼び出しを `ThumbnailGenerator.generate(from:size:)` に置換
+
+**完了条件**: ビルド成功。`SplitPreviewView` 内にサムネイル描画コードが存在しない。分割プレビューの表示が変わらない。
+
+---
+
+### Step 3: サムネイル非同期生成 — メインスレッドの解放
+
+**目的**: `PDFItem.create()` のサムネイル生成を非同期化し、100ページ超のPDFでもUIがフリーズしないようにする
+
+**問題の本質**:
+現在の `PDFItem.create(from:)` は同期メソッドで、全ページの `PageItem`（各80×104ptサムネイル付き）を一括生成している。50ページのPDFで約50枚のサムネイルをメインスレッドで描画 → UIフリーズ。
+
+**変更方針**:
+- ファイルレベルのサムネイル（44×56pt、1枚）は同期のまま維持（高速、UX影響なし）
+- ページレベルのサムネイル（80×104pt、全ページ分）を**遅延非同期生成**に変更
+
+**変更内容**:
+
+`Models/PageItem.swift`:
+```swift
+struct PageItem: Identifiable, Hashable {
+    let id = UUID()
+    let parentID: PDFItem.ID
+    let pageIndex: Int
+    var thumbnail: NSImage?  // Optional に変更（nil = 未生成）
+    var isIncluded: Bool = true
+
+    /// プレースホルダー付きファクトリ（サムネイルなし）
+    static func placeholder(parentID: PDFItem.ID, pageIndex: Int) -> PageItem
+}
+```
+
+`Models/PDFItem.swift`:
+```swift
+static func create(from url: URL) throws -> PDFItem {
+    // ...
+    // ページ一覧はサムネイルなしで即座に生成
+    let pages = (0..<document.pageCount).map { index in
+        PageItem.placeholder(parentID: itemID, pageIndex: index)
+    }
+    // ...
+}
+```
+
+`Services/ThumbnailGenerator.swift`:
+```swift
+enum ThumbnailGenerator {
+    // 既存メソッドはそのまま
+
+    /// 全ページのサムネイルを非同期生成し、コールバックで1枚ずつ返す
+    static func generateAsync(
+        from url: URL,
+        size: NSSize,
+        onPageReady: @MainActor @Sendable (Int, NSImage) -> Void
+    ) async
+}
+```
+
+`ViewModels/PDFMergeViewModel.swift`（後の Step 6 で分割されるが、まずは既存VMに追加）:
+```swift
+/// ページサムネイルの非同期ロード開始
+func loadPageThumbnails(for itemID: PDFItem.ID) {
+    Task {
+        guard let item = pdfItems.first(where: { $0.id == itemID }) else { return }
+        await ThumbnailGenerator.generateAsync(from: item.url, size: NSSize(width: 80, height: 104)) { pageIndex, image in
+            if let idx = self.pdfItems.firstIndex(where: { $0.id == itemID }),
+               pageIndex < self.pdfItems[idx].pages.count {
+                self.pdfItems[idx].pages[pageIndex].thumbnail = image
+            }
+        }
+    }
+}
+```
+
+`Views/PageThumbnailView.swift`:
+```swift
+// thumbnail が nil の場合、プレースホルダー（灰色矩形 + ProgressView）を表示
+Group {
+    if let thumbnail = page.thumbnail {
+        Image(nsImage: thumbnail)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+    } else {
+        ZStack {
+            Rectangle().fill(.quaternary)
+            ProgressView()
+                .scaleEffect(0.6)
+        }
+    }
+}
+```
+
+`Views/SplitPreviewView.swift`:
+- `@State private var pageThumbnails: [Int: NSImage]` を削除
+- `ThumbnailGenerator.generateAsync` に統一
+
+**完了条件**: ビルド成功。100ページのPDFをドロップしてもUIがフリーズしない。サムネイルが順次描画される（プレースホルダー → 実画像）。
+
+---
+
+### Step 4: セキュリティスコープ管理の一元化
+
+**目的**: `startAccessingSecurityScopedResource()` / `stopAccessingSecurityScopedResource()` の呼び出しを一箇所で管理し、リーク・未解放を防ぐ
+
+**問題の本質**:
+- `ContentView` で `startAccessing` を呼ぶ箇所、`PDFMergeViewModel` で `stopAccessing` を呼ぶ箇所が分散
+- ドロップ時に結合モードでは `startAccessing` を呼んでいない（fileImporter経由のみ）
+- アプリ終了時に最後の `splitSourceItem` の `stopAccessing` が呼ばれない
+
+**作成ファイル**: `Services/SecurityScopeManager.swift`
+
+```swift
+import Foundation
+
+/// セキュリティスコープ付きURLのライフサイクルを一元管理する
+final class SecurityScopeManager {
+    /// 現在アクセス中のURL集合
+    private var accessingURLs: Set<URL> = []
+
+    /// セキュリティスコープアクセスを開始する
+    /// - Returns: アクセス成功なら true
+    @discardableResult
+    func startAccessing(_ url: URL) -> Bool {
+        guard !accessingURLs.contains(url) else { return true }  // 二重開始防止
+        guard url.startAccessingSecurityScopedResource() else { return false }
+        accessingURLs.insert(url)
+        return true
+    }
+
+    /// セキュリティスコープアクセスを終了する
+    func stopAccessing(_ url: URL) {
+        guard accessingURLs.contains(url) else { return }
+        url.stopAccessingSecurityScopedResource()
+        accessingURLs.remove(url)
+    }
+
+    /// 全てのアクセスを終了する（アプリ終了時）
+    func stopAll() {
+        for url in accessingURLs {
+            url.stopAccessingSecurityScopedResource()
+        }
+        accessingURLs.removeAll()
+    }
+
+    deinit {
+        stopAll()
+    }
+}
+```
+
+**変更内容**:
+- `PDFMergeViewModel`（→ 後に `PDFWorkspaceViewModel`）に `let scopeManager = SecurityScopeManager()` を保持
+- `ContentView` の `fileImporter` / `dropDestination` での `startAccessing` 呼び出しを `scopeManager.startAccessing` に統一
+- `removeItems` / `clearAll` / `setSplitSource` での `stopAccessing` を `scopeManager.stopAccessing` に統一
+- ドロップ時（結合モード）にも `scopeManager.startAccessing` を呼ぶよう修正
+
+**完了条件**: ビルド成功。`startAccessingSecurityScopedResource` / `stopAccessingSecurityScopedResource` の直接呼び出しがアプリ内に存在しない（`SecurityScopeManager` 内を除く）。
+
+---
+
+### Step 5: エラーUXの刷新 — 「何が起きたか」「どうすればいいか」を伝える
+
+**目的**: エラーを型安全に構造化し、ユーザーに回復手段を提示する
+
+**問題の本質**:
+- 全エラーが `alertMessage: String?` で一元管理 → タイトルが常に「エラー」
+- 複数エラーが `\n` で連結される
+- 回復手段（何をすべきか）の提示がない
+
+**作成ファイル**: `Models/AppError.swift`
+
+```swift
+import Foundation
+
+/// アプリ全体のエラーを表す構造化型
+struct AppError: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+    let recoverySuggestion: String?
+    let style: Style
+
+    enum Style {
+        case warning   // 続行可能（一部ファイルのスキップ等）
+        case error     // 操作失敗
+    }
+}
+
+extension AppError {
+    /// PDFItemError からの変換
+    static func from(_ error: PDFItemError) -> AppError { ... }
+    /// PDFMergeError からの変換
+    static func from(_ error: PDFMergeError) -> AppError { ... }
+    /// PDFSplitError からの変換
+    static func from(_ error: PDFSplitError) -> AppError { ... }
+    /// 重複ファイルの通知
+    static func duplicateFiles(count: Int) -> AppError { ... }
+}
+```
+
+**具体的なエラーメッセージ改善**:
+
+| 状況 | 現在 | 改善後 |
+|------|------|--------|
+| 読み込み不可 | `"report.pdf を読み込めませんでした。"` | タイトル: `"ファイルを開けません"` / メッセージ: `"report.pdf はPDFとして読み込めませんでした。"` / 回復: `"ファイルが破損していないか確認してください。別のPDFビューアで開けるか試してみてください。"` |
+| パスワード保護 | `"report.pdf はパスワードで保護されています。"` | タイトル: `"パスワード保護"` / メッセージ: `"report.pdf はパスワードで保護されているため使用できません。"` / 回復: `"Adobe Acrobat等でパスワードを解除してから再度追加してください。"` |
+| 書き込み失敗 | `"/path への書き込みに失敗しました。"` | タイトル: `"保存できませんでした"` / メッセージ: `"指定された場所にファイルを保存できませんでした。"` / 回復: `"保存先のディスク容量と書き込み権限を確認してください。"` |
+| 重複追加 | `"選択されたファイルはすべて追加済みです。"` | タイトル: `"追加済みのファイル"` / メッセージ: `"選択された3ファイルはすべて追加済みです。"` / 回復: なし (`.warning`) |
+
+**変更ファイル**:
+- `PDFMergeViewModel.swift`: `alertMessage: String?` → `currentError: AppError?`
+- `ContentView.swift`: `.alert` を `AppError` に基づく構造化表示に変更
+
+```swift
+.alert(
+    viewModel.currentError?.title ?? "",
+    isPresented: Binding(
+        get: { vm.currentError != nil },
+        set: { if !$0 { vm.currentError = nil } }
+    )
+) {
+    Button("OK", role: .cancel) { }
+} message: {
+    VStack {
+        Text(viewModel.currentError?.message ?? "")
+        if let suggestion = viewModel.currentError?.recoverySuggestion {
+            Text(suggestion)
+                .font(.caption)
+        }
+    }
+}
+```
+
+**完了条件**: ビルド成功。各エラー状況で異なるタイトル・メッセージ・回復手段が表示される。`alertMessage: String?` がコードベースに存在しない。
+
+---
+
+### Step 6: ViewModel 分割 — God ViewModel の解体
+
+**目的**: 515行の `PDFMergeViewModel` を責務ごとに分割し、保守可能な構造にする
+
+**これが v1.3.0 最大のリファクタリングである。慎重に、しかし大胆にやれ。**
+
+**分割方針**:
+
+```
+現在:
+  PDFMergeViewModel.swift (515行、全責務)
+
+分割後:
+  ViewModels/
+  ├── PDFWorkspaceViewModel.swift  — 共通状態 + モード管理（司令塔）
+  ├── MergeState.swift             — 結合モードの状態・操作
+  └── SplitState.swift             — 分割モードの状態・操作
+```
+
+**PDFWorkspaceViewModel** (リネーム: `PDFMergeViewModel` → `PDFWorkspaceViewModel`):
+```swift
+@Observable
+final class PDFWorkspaceViewModel {
+    // --- モード管理 ---
+    var appMode: AppMode = .merge
+
+    // --- 結合モード状態 ---
+    var merge = MergeState()
+
+    // --- 分割モード状態 ---
+    var split = SplitState()
+
+    // --- 共通状態 ---
+    var currentError: AppError? = nil
+    var isDropTargeted: Bool = false
+    let scopeManager = SecurityScopeManager()
+
+    // --- 共通算出プロパティ ---
+    var isProcessing: Bool { merge.isMerging || split.isSplitting }
+}
+```
+
+**MergeState** (struct):
+```swift
+struct MergeState {
+    var pdfItems: [PDFItem] = []
+    var selectedItemID: PDFItem.ID? = nil
+    var viewMode: ViewMode = .file
+    var selectedPageID: PageItem.ID? = nil
+    var isMerging: Bool = false
+    var mergeProgress: Double = 0.0
+    var showSuccessBanner: Bool = false
+    var savedFileURL: URL? = nil
+    var isShowingMergedPreview: Bool = false
+    var mergedDocumentURL: URL? = nil
+    var mergedPageCount: Int = 0
+    var mergedFileSizeString: String = ""
+
+    enum ViewMode: String, CaseIterable {
+        case file, page
+    }
+
+    // 算出プロパティ
+    var isEmpty: Bool { pdfItems.isEmpty }
+    var totalPageCount: Int { ... }
+    var includedPageCount: Int { ... }
+    var canMerge: Bool { ... }
+    var selectedItem: PDFItem? { ... }
+}
+```
+
+**SplitState** (struct):
+```swift
+struct SplitState {
+    var sourceItem: PDFItem? = nil
+    var config: SplitConfig = SplitConfig()
+    var isSplitting: Bool = false
+    var splitProgress: Double = 0.0
+    var outputURLs: [URL] = []
+    var outputDirectory: URL? = nil
+    var showSuccessBanner: Bool = false
+
+    // 算出プロパティ
+    var splitGroups: Result<[[Int]], SplitConfigError> { ... }
+    var canSplit: Bool { ... }
+}
+```
+
+**操作メソッドの移動**:
+- ファイル追加・削除・並替え・ページ操作 → `PDFWorkspaceViewModel` のメソッド（`merge` stateを操作）
+- 結合実行 → `PDFWorkspaceViewModel.performMerge(to:)`
+- 分割実行 → `PDFWorkspaceViewModel.performSplit(to:)`
+- Finder表示 → `PDFWorkspaceViewModel` のメソッド
+
+**全ファイルの参照更新**:
+- `@Environment(PDFMergeViewModel.self)` → `@Environment(PDFWorkspaceViewModel.self)` に全View変更
+- `viewModel.pdfItems` → `viewModel.merge.pdfItems`
+- `viewModel.selectedItemID` → `viewModel.merge.selectedItemID`
+- `viewModel.splitSourceItem` → `viewModel.split.sourceItem`
+- `viewModel.splitConfig` → `viewModel.split.config`
+- `viewModel.isMerging` → `viewModel.merge.isMerging`
+- `viewModel.isSplitting` → `viewModel.split.isSplitting`
+- 他すべてのプロパティアクセスを新構造に合わせて更新
+
+**PDF_UtilsApp.swift**:
+```swift
+@State private var viewModel = PDFWorkspaceViewModel()
+```
+
+**完了条件**: ビルド成功。`PDFMergeViewModel` が存在しない。`PDFWorkspaceViewModel` が200行以内。`MergeState` / `SplitState` がそれぞれ状態のみを持つ。全機能（結合・分割・ページ操作・プレビュー）が回帰なく動作する。
+
+---
+
+### Step 7: ContentView 分割 — 463行の解体
+
+**目的**: ContentView から独立可能なサブビューを抽出し、各ファイルを150行以内に収める
+
+**抽出対象と新規ファイル**:
+
+| 抽出元 | 新規ファイル | 内容 |
+|--------|-------------|------|
+| `mergeSuccessBanner` + `splitSuccessBanner` | `Views/SuccessBannerView.swift` | **統一された**成功バナーコンポーネント（モード引数で結合/分割を出し分け） |
+| `mergeStatusBar` | `Views/MergeStatusBar.swift` | 結合モードのステータスバー |
+| `splitStatusBar` | `Views/SplitStatusBar.swift` | 分割モードのステータスバー |
+| `emptyStateView` | `Views/EmptyStateView.swift` | 空状態ビュー（結合・分割共通、メッセージ引数化） |
+| `performMerge()` + `performSplit()` | ViewModel側に移動 | パネル表示ロジック |
+
+**SuccessBannerView — DRY統一**:
+```swift
+/// 成功バナー（結合・分割共通）
+struct SuccessBannerView: View {
+    let message: String
+    let onRevealInFinder: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+            Text(message)
+                .font(.body)
+                .fontWeight(.medium)
+            Spacer()
+            Button("Finderで表示") { onRevealInFinder() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            Button { onDismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+        .padding(.horizontal, 20)
+    }
+}
+```
+
+**EmptyStateView — 共通化**:
+```swift
+struct EmptyStateView: View {
+    let icon: String          // SF Symbol名
+    let title: String         // 主メッセージ
+    let subtitle: String      // 副メッセージ
+
+    var body: some View { ... }
+}
+
+// 使用例:
+EmptyStateView(
+    icon: "doc.richtext",
+    title: "PDFファイルをここにドロップ",
+    subtitle: "またはファイル追加ボタンで選択"
+)
+```
+
+**ContentView の最終形**:
+- レイアウト構造（`NavigationSplitView` + モード切替）のみを担当
+- ツールバー定義
+- `.dropDestination` / `.fileImporter` のハンドリング
+- **150行以内**
+
+**完了条件**: ビルド成功。`ContentView.swift` が150行以内。バナー表示が結合・分割で視覚的に同一。全機能が回帰なく動作する。
+
+---
+
+### Step 8: キーボードショートカットの実装
+
+**目的**: README・要件定義に記載されながら未実装のショートカットを実装する
+
+**未実装ショートカット一覧**:
+
+| ショートカット | 動作 | 現状 |
+|---------------|------|------|
+| `⌘1` | ファイルビューに切替（結合モード） | 未実装 |
+| `⌘2` | ページビューに切替（結合モード） | 未実装 |
+| `⌘A` | リスト内の全ファイルを選択 | 未実装 |
+
+**実装方法**:
+
+`ContentView.swift`:
+```swift
+.keyboardShortcut("1", modifiers: .command)  // ⌘1 → ファイルビュー
+.keyboardShortcut("2", modifiers: .command)  // ⌘2 → ページビュー
+```
+
+**`⌘1` / `⌘2` の実装**:
+- `.commands` 修飾子を `WindowGroup` に追加、または `ContentView` 内で `.onKeyPress` / `Button` + `.keyboardShortcut` で実装
+- 結合モードでのみ有効。分割モードでは無反応
+- 処理中（`isMerging`）は無効化
+
+```swift
+// ContentView の body 末尾に追加
+.onAppear {
+    NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        // ⌘1 / ⌘2 の処理
+    }
+}
+```
+
+**より良い方法**: `.commands { }` で `CommandGroup` を定義:
+```swift
+// PDF_UtilsApp.swift
+WindowGroup { ... }
+.commands {
+    CommandGroup(after: .toolbar) {
+        Button("ファイルビュー") {
+            viewModel.merge.viewMode = .file
+        }
+        .keyboardShortcut("1", modifiers: .command)
+        .disabled(viewModel.appMode != .merge)
+
+        Button("ページビュー") {
+            viewModel.merge.viewMode = .page
+        }
+        .keyboardShortcut("2", modifiers: .command)
+        .disabled(viewModel.appMode != .merge)
+    }
+    CommandGroup(after: .pasteboard) {
+        Button("すべて選択") {
+            viewModel.selectAll()
+        }
+        .keyboardShortcut("a", modifiers: .command)
+        .disabled(viewModel.appMode != .merge || viewModel.merge.isEmpty)
+    }
+}
+```
+
+**`⌘A` の ViewModel 実装**:
+```swift
+func selectAll() {
+    // List の複数選択に対応するか、全ファイルIDを選択状態にする
+    // 現在 selectedItemID は単一選択のため、複数選択サポートの検討が必要
+    // v1.3.0 では「最初のファイルを選択」に留め、v2.0で複数選択対応
+}
+```
+
+**注意**: 現在のリスト選択は `selectedItemID: PDFItem.ID?` で**単一選択**のみ。`⌘A` の完全な実装には `Set<PDFItem.ID>` への変更が必要だが、影響範囲が大きいため v1.3.0 では以下の方針とする:
+- `⌘1` / `⌘2`: 完全実装
+- `⌘A`: 要件定義から一旦削除し、v2.0.0 の複数選択対応時に実装
+
+**完了条件**: ビルド成功。`⌘1` でファイルビュー、`⌘2` でページビューに切り替わる。メニューバーに対応項目が表示される。
+
+---
+
+### Step 9: プレビュー表示モード切替
+
+**目的**: PDFプレビューの表示モードを singlePage ↔ singlePageContinuous で切り替え可能にする
+
+**問題の本質**:
+要件定義 §6.5.5 に「`singlePage` をデフォルト、ユーザーが連続スクロールに切替可能」と記載があるが、**切替UIが存在しない**。
+
+**変更ファイル**: `Views/PDFPreviewView.swift`
+
+**実装方針**:
+- プレビューペイン右上に小さなトグルボタンを配置
+- SF Symbol: `rectangle.split.1x2` (continuous) / `doc` (single page)
+- 状態は `PDFWorkspaceViewModel` に `previewDisplayMode: PDFDisplayMode` として保持
+
+```swift
+enum PreviewDisplayMode: String {
+    case singlePage
+    case continuous
+}
+
+struct PDFPreviewPane: View {
+    let selectedItem: PDFItem?
+    @Binding var displayMode: PreviewDisplayMode
+
+    var body: some View {
+        Group {
+            if let item = selectedItem {
+                VStack(spacing: 0) {
+                    // 表示モード切替ツールバー
+                    HStack {
+                        Spacer()
+                        Picker("表示", selection: $displayMode) {
+                            Image(systemName: "doc")
+                                .tag(PreviewDisplayMode.singlePage)
+                            Image(systemName: "rectangle.split.1x2")
+                                .tag(PreviewDisplayMode.continuous)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 80)
+                        .padding(6)
+                    }
+                    .background(.bar)
+
+                    PDFPreviewView(url: item.url, displayMode: displayMode)
+                }
+                .transition(.opacity)
+            } else {
+                emptyPreview
+            }
+        }
+    }
+}
+```
+
+`PDFPreviewView` の `makeNSView` / `updateNSView`:
+```swift
+func updateNSView(_ pdfView: PDFView, context: Context) {
+    // URL変更チェック
+    if pdfView.document?.documentURL != url {
+        pdfView.document = PDFDocument(url: url)
+    }
+    // 表示モード変更チェック
+    let targetMode: PDFDisplayMode = displayMode == .continuous ? .singlePageContinuous : .singlePage
+    if pdfView.displayMode != targetMode {
+        pdfView.displayMode = targetMode
+    }
+}
+```
+
+**完了条件**: ビルド成功。プレビュー右上のトグルで single ↔ continuous が切り替わる。切替時にスクロール位置が可能な限り維持される。
+
+---
+
+### Step 10: ファイル間ページドラッグ&ドロップ
+
+**目的**: 結合モードのページビューで、異なるファイルのセクション間でページを移動可能にする
+
+**これは v1.3.0 最大の新機能であり、最も実装難易度が高い。**
+
+**現状の制限**:
+- `PageGridView` のページD&Dは**ファイル内のみ**（`ForEach` + `.onMove` のスコープ）
+- ファイルをまたいだページ移動は不可
+
+**設計方針**:
+
+ページの「ファイル間移動」は、実質「ページのファイルAからの削除 + ファイルBへの挿入」：
+
+```swift
+/// ページをファイル間で移動する
+func movePageBetweenFiles(
+    pageID: PageItem.ID,
+    fromFileID: PDFItem.ID,
+    toFileID: PDFItem.ID,
+    insertionIndex: Int
+) {
+    guard let srcIdx = merge.pdfItems.firstIndex(where: { $0.id == fromFileID }),
+          let pageIdx = merge.pdfItems[srcIdx].pages.firstIndex(where: { $0.id == pageID }),
+          let dstIdx = merge.pdfItems.firstIndex(where: { $0.id == toFileID })
+    else { return }
+
+    var page = merge.pdfItems[srcIdx].pages.remove(at: pageIdx)
+    page = PageItem(
+        parentID: toFileID,  // 親IDを更新
+        pageIndex: page.pageIndex,
+        thumbnail: page.thumbnail,
+        isIncluded: page.isIncluded
+    )
+    merge.pdfItems[dstIdx].pages.insert(page, at: insertionIndex)
+    dismissMergedPreview()
+}
+```
+
+**UI実装**:
+- `.draggable(page.id.uuidString)` は既に実装済み
+- `.dropDestination(for: String.self)` を各ファイルセクションに追加
+- ドロップ先のファイルセクションがハイライトされるフィードバック
+- 同一ファイル内のドロップは既存の `.onMove` で処理
+
+**`PageItem` の変更**:
+- `parentID` を `var` に変更（移動時に更新が必要）
+- `let id = UUID()` はそのまま維持（移動してもIDは不変）
+
+**`PDFItem` の注意**:
+- ページ移動後、`pageCount` プロパティは `pages.count` と乖離する
+- `pageCount` を算出プロパティに変更するか、`originalPageCount` と `currentPageCount` を分離
+
+```swift
+struct PDFItem: Identifiable, Hashable {
+    // ...
+    let originalPageCount: Int   // 元ファイルのページ数（不変）
+    // pageCount は pages.count で動的に算出
+    var currentPageCount: Int { pages.count }
+}
+```
+
+**完了条件**: ビルド成功。ページビューでファイルAのページをファイルBのセクションにドラッグ&ドロップでき、ページが移動する。移動後のページが結合結果に正しく反映される。
+
+---
+
+### Step 11: ドキュメント整合性の回復
+
+**目的**: REQUIREMENTS.md・README.md・release_note.md をコードの実態に合わせて更新する
+
+**矛盾箇所の修正**:
+
+| 箇所 | 現在の記述 | 修正後 |
+|------|-----------|--------|
+| FR-008 モード切替 | 「切替時にファイルリスト・選択状態はリセットされる」 | 「切替時にファイルリスト・選択状態は保持される（処理中の切替は無効）」 |
+| §9 ショートカット `⌘1` | 「結合モードに切替」 | 「ファイルビューに切替（結合モード内）」 |
+| §9 ショートカット `⌘2` | 「分割モードに切替」 | 「ページビューに切替（結合モード内）」 |
+| §9 ショートカット `⌘A` | 記載あり | v1.3.0では削除（v2.0.0で複数選択対応時に復活） |
+| §5.1 アーキテクチャ図 | `PDFMergeViewModel.swift` | `PDFWorkspaceViewModel.swift` + `MergeState.swift` + `SplitState.swift` に更新 |
+| §6.5.5 プレビュー | 「ユーザーが連続スクロールに切替可能」（UIなし） | 「右上のトグルで singlePage ↔ continuous を切替」 |
+| §5.3 結合ロジック | ページ単位の結合に言及がない | ページ単位（`pageIndices` 指定）の結合に更新 |
+| `canMerge` の条件 | 記載なし | `includedPageCount >= 2` の仕様を明記 |
+
+**README.md の更新**:
+- Features セクションにファイル間ページD&D、プレビューモード切替を追加
+- Keyboard shortcuts テーブルを実態に合わせて更新
+
+**release_note.md の作成**: `release_note_v1.3.0.md` を新規作成
+
+**完了条件**: REQUIREMENTS.md の全記述がコードの実態と一致する。README.md がv1.3.0の全機能を反映する。
+
+---
+
+### Step 12: ポリッシュ・リグレッションテスト・リリース準備
+
+**目的**: 出荷品質の確保
+
+**チェックリスト**:
+
+| # | 項目 | 確認方法 |
+|---|------|---------|
+| 1 | 結合: 複数PDF追加 → 並替え → ページ除外 → 結合 → プレビュー | 手動テスト |
+| 2 | 分割: PDF選択 → 3方式それぞれで分割 → Finderで確認 | 手動テスト |
+| 3 | ファイル間ページD&D → 結合結果が正しい | 手動テスト |
+| 4 | 100ページ超PDFのサムネイル: UIフリーズなし | 手動テスト（大容量PDF） |
+| 5 | セキュリティスコープ: ファイル追加→削除→再追加→結合が動作 | 手動テスト |
+| 6 | エラー: 破損PDF / パスワードPDF / 非PDF → 適切なメッセージ | 手動テスト |
+| 7 | キーボード: `⌘O`, `⌘S`, `⌘⌫`, `⌘1`, `⌘2` が動作 | 手動テスト |
+| 8 | プレビューモード切替: single ↔ continuous | 手動テスト |
+| 9 | ダークモード / ライトモード表示 | 両モードで目視 |
+| 10 | VoiceOver: 全操作要素にラベルあり | VoiceOver有効化テスト |
+| 11 | ウィンドウ最小サイズ 600×400 でレイアウト崩れなし | リサイズテスト |
+| 12 | メモリリーク: 大量ファイル追加→全クリアを繰り返し | Instruments |
+| 13 | バンドルID / バージョン番号の確認 | Info.plist 確認 |
+| 14 | DMG ビルド | `build/` ディレクトリで検証 |
+
+**バージョン更新**:
+- `Info.plist`: `CFBundleShortVersionString` → `1.3.0`
+- `Info.plist`: `CFBundleVersion` → ビルド番号をインクリメント
+
+**完了条件**: 全チェック項目に合格。DMGが生成され、クリーン環境で起動・動作する。
+
+---
+
+### 実装順序の全体像（v1.3.0）
+
+```
+Step 1   クリーンアップ（Views/削除、バンドルID修正）
+  │       ↓ 衛生状態を整える
+Step 2   ThumbnailGenerator 統一
+  │       ↓ 重複ロジック排除（Step 3 の前提）
+Step 3   サムネイル非同期化
+  │       ↓ 100ページPDFでもUIフリーズしない
+Step 4   セキュリティスコープ管理一元化
+  │       ↓ リソースリークを防ぐ
+Step 5   エラーUX刷新（AppError型）
+  │       ↓ Step 6 の ViewModel 分割時に新エラー型を使える
+Step 6   ViewModel 分割（God VM → Workspace + State）
+  │       ↓ 最大のリファクタリング完了
+Step 7   ContentView 分割（バナー・ステータスバー抽出）
+  │       ↓ View層の整理完了
+Step 8   キーボードショートカット（⌘1/⌘2）
+  │       ↓ 操作性向上
+Step 9   プレビューモード切替
+  │       ↓ 要件定義との整合性回復
+Step 10  ファイル間ページD&D
+  │       ↓ v1.3.0 最大の新機能
+Step 11  ドキュメント整合性回復
+  │       ↓ コードとドキュメントが一致
+Step 12  ポリッシュ・リリース準備
+          ↓ 出荷品質
+```
+
+### 各ステップの所要時間見積もり
+
+| Step | 内容 | 見積もり |
+|------|------|---------|
+| 1 | クリーンアップ | 10分 |
+| 2 | ThumbnailGenerator 統一 | 15分 |
+| 3 | サムネイル非同期化 | 45分 |
+| 4 | セキュリティスコープ管理 | 30分 |
+| 5 | エラーUX刷新 | 40分 |
+| 6 | ViewModel 分割 | 90分 |
+| 7 | ContentView 分割 | 45分 |
+| 8 | キーボードショートカット | 20分 |
+| 9 | プレビューモード切替 | 30分 |
+| 10 | ファイル間ページD&D | 60分 |
+| 11 | ドキュメント整合性 | 20分 |
+| 12 | ポリッシュ・リリース準備 | 30分 |
+| | **合計** | **約7.5時間** |
+
+---
+
+### v1.3.0 で変更されるファイル一覧
+
+| 操作 | ファイル |
+|------|---------|
+| **新規作成** | `Models/AppError.swift` |
+| **新規作成** | `Services/SecurityScopeManager.swift` |
+| **新規作成** | `ViewModels/MergeState.swift` |
+| **新規作成** | `ViewModels/SplitState.swift` |
+| **新規作成** | `Views/SuccessBannerView.swift` |
+| **新規作成** | `Views/MergeStatusBar.swift` |
+| **新規作成** | `Views/SplitStatusBar.swift` |
+| **新規作成** | `Views/EmptyStateView.swift` |
+| **リネーム** | `ViewModels/PDFMergeViewModel.swift` → `ViewModels/PDFWorkspaceViewModel.swift` |
+| **変更** | `Models/PDFItem.swift` |
+| **変更** | `Models/PageItem.swift` |
+| **変更** | `Services/ThumbnailGenerator.swift` |
+| **変更** | `Views/ContentView.swift` |
+| **変更** | `Views/PDFPreviewView.swift` |
+| **変更** | `Views/SplitPreviewView.swift` |
+| **変更** | `Views/PageGridView.swift` |
+| **変更** | `Views/PageThumbnailView.swift` |
+| **変更** | `Views/PDFListView.swift` |
+| **変更** | `Views/SplitConfigView.swift` |
+| **変更** | `Views/MergedPreviewView.swift` |
+| **変更** | `PDF_UtilsApp.swift` |
+| **変更** | `REQUIREMENTS.md` |
+| **変更** | `README.md` |
+| **新規作成** | `release_note_v1.3.0.md` |
+| **削除** | ルートの空 `Views/` ディレクトリ |
+
+## 14. 将来の拡張候補（v2以降）
 
 - ページ回転機能
 - ページ抽出機能（選択ページだけを新PDFとして書き出し）
@@ -1539,3 +2403,49 @@ Step 8   エラーハンドリング + アクセシビリティ
 - PDFメタデータ（タイトル・著者）の編集
 - バッチ処理（複数セットの結合・分割を一括実行）
 - Finder Quick Action / Services メニューへの統合
+- 複数ファイル選択（`⌘A` / Shift+クリック）対応
+
+---
+
+## 15. v1.3.0 レビュー & 今後のロードマップ（2026-03-04）
+
+### v1.3.0 の総括
+
+- 12ステップの規律ある実行。27ファイル / 2,893行。1ファイル平均107行
+- God Object 解体（PDFMergeViewModel → PDFWorkspaceViewModel + MergeState + SplitState）
+- ContentView 462行 → 121行への分割
+- Swift 6 互換性の全警告解消（CGContext ベース描画への移行）
+- force unwrap ゼロ、dead code ゼロ、アクセシビリティ対応
+- **評価**: 基礎工事としては合格。だがユーザー体験としての「魂」がまだない
+
+### v1.4.0 方針 — 「削る」リリース
+
+機能を足すのではなく、削り、磨くリリースとする。
+
+| # | テーマ | 内容 |
+|---|--------|------|
+| 1 | **3アクション結合** | 起動→ドロップ→結合完了を3アクション以内に。ドロップ直後に「このまま結合しますか？」の提案UI |
+| 2 | **モード自動判定** | ファイル1つ→分割UI、複数ファイル→結合UI。明示的なモード切替を不要にする |
+| 3 | **ページビューをデフォルト化** | 最も強力な機能を隠さない。ファイルビューは上級者オプションへ降格 |
+| 4 | **マイクロインタラクション** | ドロップ・移動・結合完了の全瞬間にアニメーション・フィードバックを追加 |
+| 5 | **PDFWorkspaceViewModel 分割** | 現在446行。結合オーケストレーションと分割オーケストレーションの責務を分離 |
+
+### v2.0.0 方針 — 「macOSネイティブであることが不可欠」なリリース
+
+競合はブラウザの1タブ。それに勝つために、macOSネイティブでしかできない価値を提供する。
+
+| # | テーマ | 内容 |
+|---|--------|------|
+| 1 | **Finder Quick Action** | FinderでPDF右クリック → 「PDF-Utilsで結合」。アプリを開く必要すらなくする |
+| 2 | **ショートカットApp連携** | macOS ショートカットに対応。自動化ワークフローの一部としてPDF操作を提供 |
+| 3 | **OCR + テキスト検索** | PDFKitのテキスト抽出を活用。ファイル名ではなく中身でPDFを理解するアプリへ |
+| 4 | **作業セッション永続化** | SwiftData導入。昨日やりかけた作業を今日続けられるようにする |
+| 5 | **iCloud同期** | 複数Mac間で作業状態を同期 |
+
+### 設計原則（全バージョン共通）
+
+> **ユーザーがこのアプリを消したとき、何か足りないと感じるか？**
+>
+> v1.3.0 = No（整っているが不可欠ではない）
+> v1.4.0 = Maybe（鋭さで印象を残す）
+> v2.0.0 = Yes（macOS体験の一部になる）

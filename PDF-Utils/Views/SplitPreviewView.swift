@@ -11,7 +11,7 @@ import AppKit
 
 /// 分割プレビュー（右ペイン） — ページサムネイルグリッドで分割結果を視覚的に表示
 struct SplitPreviewView: View {
-    @Environment(PDFMergeViewModel.self) private var viewModel
+    @Environment(PDFWorkspaceViewModel.self) private var viewModel
 
     /// グリッドのカラム定義（80pt幅、可変数）
     private let columns = [GridItem(.adaptive(minimum: 80, maximum: 100), spacing: 12)]
@@ -27,14 +27,14 @@ struct SplitPreviewView: View {
 
     var body: some View {
         Group {
-            if let source = viewModel.splitSourceItem {
+            if let source = viewModel.split.sourceItem {
                 previewContent(source: source)
             } else {
                 emptyPreview
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onChange(of: viewModel.splitSourceItem?.url) { _, newURL in
+        .onChange(of: viewModel.split.sourceItem?.url) { _, newURL in
             if newURL != cachedSourceURL {
                 pageThumbnails.removeAll()
                 cachedSourceURL = newURL
@@ -44,7 +44,7 @@ struct SplitPreviewView: View {
             }
         }
         .onAppear {
-            if let url = viewModel.splitSourceItem?.url, pageThumbnails.isEmpty {
+            if let url = viewModel.split.sourceItem?.url, pageThumbnails.isEmpty {
                 cachedSourceURL = url
                 generateAllThumbnails(url: url)
             }
@@ -55,7 +55,7 @@ struct SplitPreviewView: View {
 
     @ViewBuilder
     private func previewContent(source: PDFItem) -> some View {
-        let groupsResult = viewModel.splitGroups
+        let groupsResult = viewModel.split.splitGroups
 
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -197,44 +197,10 @@ struct SplitPreviewView: View {
 
     /// 全ページのサムネイルを非同期生成
     private func generateAllThumbnails(url: URL) {
-        Task.detached(priority: .userInitiated) {
-            guard let document = PDFDocument(url: url) else { return }
-            let totalPages = document.pageCount
-
-            for pageIndex in 0..<totalPages {
-                guard let page = document.page(at: pageIndex) else { continue }
-                let thumbnail = Self.renderThumbnail(from: page)
-
-                await MainActor.run {
-                    pageThumbnails[pageIndex] = thumbnail
-                }
-            }
+        let size = Self.thumbnailSize
+        Task {
+            let thumbnails = await ThumbnailGenerator.generateAll(from: url, size: size)
+            pageThumbnails = thumbnails
         }
-    }
-
-    /// PDFPageからサムネイルを描画（80×104pt）
-    private static func renderThumbnail(from page: PDFPage) -> NSImage {
-        let size = thumbnailSize
-        let pageRect = page.bounds(for: .mediaBox)
-        let scale = min(size.width / pageRect.width, size.height / pageRect.height)
-
-        let scaledWidth = pageRect.width * scale
-        let scaledHeight = pageRect.height * scale
-        let offsetX = (size.width - scaledWidth) / 2
-        let offsetY = (size.height - scaledHeight) / 2
-
-        let image = NSImage(size: size, flipped: false) { _ in
-            NSColor.white.setFill()
-            NSRect(origin: .zero, size: size).fill()
-
-            guard let context = NSGraphicsContext.current?.cgContext else { return false }
-            context.saveGState()
-            context.translateBy(x: offsetX, y: offsetY)
-            context.scaleBy(x: scale, y: scale)
-            page.draw(with: .mediaBox, to: context)
-            context.restoreGState()
-            return true
-        }
-        return image
     }
 }

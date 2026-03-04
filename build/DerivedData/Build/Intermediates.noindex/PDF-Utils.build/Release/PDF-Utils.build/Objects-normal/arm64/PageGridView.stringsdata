@@ -1,0 +1,56 @@
+{
+  "source": "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/PageGridView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "ページ一覧",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "全ページを除外",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "全ページを選択",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 83
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld/%lldページ",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 61
+        }
+      },
+      {
+        "comment": "",
+        "key": "警告: 0ページのファイルがあります",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 181
+        }
+      },
+      {
+        "comment": "",
+        "key": "0ページのファイルがあります",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 176
+        }
+      }
+    ]
+  },
+  "version": 1
+}

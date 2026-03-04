@@ -10,7 +10,7 @@ import PDFKit
 
 /// 結合結果の出力プレビュー（右ペイン）
 struct MergedPreviewView: View {
-    @Environment(PDFMergeViewModel.self) private var viewModel
+    @Environment(PDFWorkspaceViewModel.self) private var viewModel
     let url: URL
 
     var body: some View {
@@ -36,7 +36,7 @@ struct MergedPreviewView: View {
                 Spacer()
 
                 // 結合結果の情報
-                Text("結合結果: \(viewModel.mergedPageCount)ページ · \(viewModel.mergedFileSizeString)")
+                Text("結合結果: \(viewModel.merge.mergedPageCount)ページ · \(viewModel.merge.mergedFileSizeString)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -65,9 +65,9 @@ struct PDFItem: Identifiable, Hashable {
         // ページ一覧を生成するために仮IDを先に確定
         let itemID = UUID()
 
-        // 全ページのPageItemを生成
+        // 全ページのプレースホルダーを生成（サムネイルは後から非同期ロード）
         let pages = (0..<document.pageCount).map { index in
-            PageItem.create(from: document, parentID: itemID, pageIndex: index)
+            PageItem.placeholder(parentID: itemID, pageIndex: index)
         }
 
         return PDFItem(

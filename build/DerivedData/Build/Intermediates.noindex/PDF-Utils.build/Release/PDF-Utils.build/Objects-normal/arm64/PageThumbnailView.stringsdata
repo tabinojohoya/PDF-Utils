@@ -1,0 +1,64 @@
+{
+  "source": "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/PageThumbnailView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "ページ%lld、%@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 79
+        }
+      },
+      {
+        "comment": "",
+        "key": "除外",
+        "location": {
+          "startingColumn": 55,
+          "startingLine": 81
+        }
+      },
+      {
+        "comment": "",
+        "key": "含める",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 81
+        }
+      },
+      {
+        "comment": "",
+        "key": "選択",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 84
+        }
+      },
+      {
+        "comment": "",
+        "key": "p.%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 65
+        }
+      },
+      {
+        "comment": "",
+        "key": "結合対象から除外",
+        "location": {
+          "startingColumn": 55,
+          "startingLine": 55
+        }
+      },
+      {
+        "comment": "",
+        "key": "結合対象に含める",
+        "location": {
+          "startingColumn": 84,
+          "startingLine": 55
+        }
+      }
+    ]
+  },
+  "version": 1
+}

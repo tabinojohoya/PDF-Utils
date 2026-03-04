@@ -1,0 +1,24 @@
+{
+  "source": "/Users/soma/Apps/PDF-Utils/PDF-Utils/Views/SuccessBannerView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Finderで表示",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "バナーを閉じる",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 39
+        }
+      }
+    ]
+  },
+  "version": 1
+}
