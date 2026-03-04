@@ -85,7 +85,7 @@
 | 概要 | アプリの動作モードを「結合」と「分割」で切り替えられる |
 | 操作方法 | ツールバーのセグメントコントロール（`Picker` with `.segmented`） |
 | デフォルト | 結合モード |
-| 切替時の挙動 | モード切替時にファイルリスト・選択状態はリセットされる |
+| 切替時の挙動 | モード切替時にファイルリスト・選択状態は保持される（処理中の切替は無効） |
 | 視覚フィードバック | 選択中のモードがハイライトされ、UIが対応レイアウトに遷移 |
 
 ### 3.9 分割対象PDFの選択 (FR-009)
@@ -180,21 +180,35 @@
 PDF-Utils/
 ├── PDF_UtilsApp.swift          # アプリエントリポイント
 ├── Models/
-│   ├── PDFItem.swift            # PDFファイルモデル（ファイル情報保持）
-│   └── SplitConfig.swift        # 分割設定モデル（方式・範囲）
+│   ├── AppError.swift            # 構造化エラー型
+│   ├── PDFItem.swift              # PDFファイルモデル（ファイル情報保持）
+│   ├── PageItem.swift             # ページ単位モデル
+│   └── SplitConfig.swift          # 分割設定モデル（方式・範囲）
 ├── ViewModels/
-│   └── PDFMergeViewModel.swift  # 結合・分割ロジック・状態管理
+│   ├── PDFWorkspaceViewModel.swift  # ワークスペース管理・共通操作
+│   ├── MergeState.swift             # 結合モード状態
+│   └── SplitState.swift             # 分割モード状態
 ├── Views/
-│   ├── ContentView.swift        # メインレイアウト（Split View）
-│   ├── PDFListView.swift        # PDF一覧（左ペイン・結合モード）
-│   ├── PDFListRowView.swift     # 一覧の各行
-│   ├── PDFPreviewView.swift     # プレビュー（右ペイン）
-│   ├── DropOverlayView.swift    # ドラッグ&ドロップオーバーレイ
-│   ├── SplitConfigView.swift    # 分割設定UI（左ペイン・分割モード）
-│   └── SplitPreviewView.swift   # 分割プレビュー（右ペイン・分割モード）
+│   ├── ContentView+Toolbar.swift  # ツールバー定義・パネルアクション
+│   ├── ContentView.swift          # メインレイアウト（Split View）
+│   ├── DropOverlayView.swift      # ドラッグ&ドロップオーバーレイ
+│   ├── EmptyStateView.swift       # 空状態の案内表示
+│   ├── MergeStatusBar.swift       # 結合モードステータスバー
+│   ├── MergedPreviewView.swift    # 結合結果プレビュー
+│   ├── PDFListRowView.swift       # 一覧の各行
+│   ├── PDFListView.swift          # PDF一覧（左ペイン・結合モード）
+│   ├── PDFPreviewView.swift       # プレビュー（右ペイン）
+│   ├── PageGridView.swift         # ページサムネイルグリッド
+│   ├── PageThumbnailView.swift    # 個別ページサムネイル
+│   ├── SplitConfigView.swift      # 分割設定UI（左ペイン・分割モード）
+│   ├── SplitPreviewView.swift     # 分割プレビュー（右ペイン・分割モード）
+│   ├── SplitStatusBar.swift       # 分割モードステータスバー
+│   └── SuccessBannerView.swift    # 成功バナー
 ├── Services/
-│   ├── PDFMergeService.swift    # PDF結合エンジン（PDFKit使用）
-│   └── PDFSplitService.swift    # PDF分割エンジン（PDFKit使用）
+│   ├── PDFMergeService.swift      # PDF結合エンジン（PDFKit使用）
+│   ├── PDFSplitService.swift      # PDF分割エンジン（PDFKit使用）
+│   ├── SecurityScopeManager.swift # セキュリティスコープURL管理
+│   └── ThumbnailGenerator.swift   # サムネイル生成（非同期・キャッシュ）
 └── Assets.xcassets/
 ```
 
@@ -215,7 +229,8 @@ PDF-Utils/
 // 概要: PDFKit の PDFDocument を使用
 // 1. 各PDFファイルを PDFDocument として読み込み
 // 2. 新規 PDFDocument を作成
-// 3. 各ソースの全ページを順番に insert
+// 3. 各ソースの含まれるページ（PageItem.isIncluded == true）のみを順番に insert
+//    - ページ単位の除外・並び替えが反映される
 // 4. 結合後の PDFDocument を write で保存
 ```
 
@@ -255,7 +270,7 @@ struct SplitConfig {
 
 ### 5.6 状態管理
 
-- `@Observable` クラス（`PDFMergeViewModel`）で一元管理
+- `@Observable` クラス（`PDFWorkspaceViewModel` + `MergeState` + `SplitState`）で一元管理
 - `appMode: AppMode`（`.merge` / `.split`）でモード状態を保持
 - 分割モード時: `splitSourceItem: PDFItem?`, `splitConfig: SplitConfig` を追加管理
 - SwiftData は使用しない（セッション内の一時データのみ）
@@ -484,7 +499,7 @@ SF Symbolsのみ使用。サードパーティアイコンは一切不要。
 | 要素 | 仕様 |
 |------|------|
 | 実装 | `PDFView` を `NSViewRepresentable` でラップ |
-| 表示モード | `.singlePage` をデフォルト、ユーザーが連続スクロールに切替可能 |
+| 表示モード | `.singlePage` をデフォルト、右上のトグルで singlePage ↔ continuous を切替 |
 | 自動フィット | `.autoScales = true` でペインサイズに自動フィット |
 | ページ遷移 | PDFView標準のスクロール / スワイプ |
 | 未選択時 | 薄いグレー背景 + 「PDFを選択してプレビュー」テキスト（`.secondary`） |
@@ -764,9 +779,8 @@ SF Symbolsのみ使用。サードパーティアイコンは一切不要。
 | ⌘ O | ファイル追加ダイアログを開く（両モード共通） |
 | ⌘ S | PDF結合を実行（結合モード） / PDF分割を実行（分割モード） |
 | ⌘ ⌫ | 選択中のファイルをリストから削除（結合モード） |
-| ⌘ A | リスト内の全ファイルを選択（結合モード） |
-| ⌘ 1 | 結合モードに切替 |
-| ⌘ 2 | 分割モードに切替 |
+| ⌘ 1 | ファイルビューに切替（結合モード内） |
+| ⌘ 2 | ページビューに切替（結合モード内） |
 
 ## 10. 制約事項・前提条件
 
@@ -884,7 +898,7 @@ class PDFMergeViewModel {
     // --- 算出プロパティ ---
     var totalPageCount: Int
     var isEmpty: Bool
-    var canMerge: Bool  // items.count >= 2
+    var canMerge: Bool  // includedPageCount >= 2（結合対象ページが2ページ以上）
     var selectedItem: PDFItem?
 
     // --- 操作 ---
@@ -1107,7 +1121,7 @@ struct PDF_UtilsApp: App {
 | 2 | 破損PDFの追加 | `PDFDocument(url:)` が `nil` → エラーAlert表示、リストに追加しない |
 | 3 | パスワード付きPDF | `isLocked == true` → Alert表示「{ファイル名}はパスワードで保護されています」 |
 | 4 | 同一ファイルの重複追加 | URLの重複チェック → 既に追加済みの場合はスキップ+通知 |
-| 5 | 結合対象が1件のみ | 結合ボタンを無効化（`canMerge = items.count >= 2`） |
+| 5 | 結合対象ページが不足 | 結合ボタンを無効化（`canMerge = includedPageCount >= 2`） |
 | 6 | 結合中のUI操作 | `isMerging` 中はツールバーボタンを `.disabled(true)` |
 | 7 | 保存先の書き込み権限なし | `PDFMergeError.writeFailed` → エラーAlert |
 
