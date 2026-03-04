@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct PDF_UtilsApp: App {
-    @State private var viewModel = PDFMergeViewModel()
+    @State private var viewModel = PDFWorkspaceViewModel()
 
     var body: some Scene {
         WindowGroup {

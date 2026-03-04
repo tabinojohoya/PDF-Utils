@@ -7,7 +7,7 @@
         "key": "分割設定",
         "location": {
           "startingColumn": 26,
-          "startingLine": 118
+          "startingLine": 114
         }
       },
       {
@@ -15,7 +15,7 @@
         "key": "%@、%lldページ、%@",
         "location": {
           "startingColumn": 29,
-          "startingLine": 150
+          "startingLine": 146
         }
       },
       {
@@ -23,7 +23,7 @@
         "key": "分割するPDFファイルを選択してください",
         "location": {
           "startingColumn": 29,
-          "startingLine": 173
+          "startingLine": 169
         }
       },
       {
@@ -175,7 +175,7 @@
         "key": "%lldページ · %@",
         "location": {
           "startingColumn": 22,
-          "startingLine": 141
+          "startingLine": 137
         }
       },
       {
@@ -183,7 +183,7 @@
         "key": "PDFファイルをドロップ",
         "location": {
           "startingColumn": 18,
-          "startingLine": 162
+          "startingLine": 158
         }
       },
       {
@@ -191,7 +191,7 @@
         "key": "またはツールバーから選択",
         "location": {
           "startingColumn": 18,
-          "startingLine": 166
+          "startingLine": 162
         }
       },
       {
@@ -199,7 +199,7 @@
         "key": "%lldファイルに分割されます",
         "location": {
           "startingColumn": 21,
-          "startingLine": 183
+          "startingLine": 179
         }
       },
       {
@@ -207,7 +207,7 @@
         "key": "分割結果",
         "location": {
           "startingColumn": 22,
-          "startingLine": 189
+          "startingLine": 185
         }
       }
     ]

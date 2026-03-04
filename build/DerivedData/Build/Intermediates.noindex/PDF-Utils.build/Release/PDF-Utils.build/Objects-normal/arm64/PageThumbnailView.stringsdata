@@ -7,7 +7,7 @@
         "key": "ページ%lld、%@",
         "location": {
           "startingColumn": 29,
-          "startingLine": 81
+          "startingLine": 79
         }
       },
       {
@@ -15,7 +15,7 @@
         "key": "除外",
         "location": {
           "startingColumn": 55,
-          "startingLine": 83
+          "startingLine": 81
         }
       },
       {
@@ -23,7 +23,7 @@
         "key": "含める",
         "location": {
           "startingColumn": 66,
-          "startingLine": 83
+          "startingLine": 81
         }
       },
       {
@@ -31,7 +31,7 @@
         "key": "選択",
         "location": {
           "startingColumn": 37,
-          "startingLine": 86
+          "startingLine": 84
         }
       },
       {
@@ -39,7 +39,7 @@
         "key": "p.%lld",
         "location": {
           "startingColumn": 18,
-          "startingLine": 67
+          "startingLine": 65
         }
       },
       {
@@ -47,7 +47,7 @@
         "key": "結合対象から除外",
         "location": {
           "startingColumn": 55,
-          "startingLine": 57
+          "startingLine": 55
         }
       },
       {
@@ -55,7 +55,7 @@
         "key": "結合対象に含める",
         "location": {
           "startingColumn": 84,
-          "startingLine": 57
+          "startingLine": 55
         }
       }
     ]

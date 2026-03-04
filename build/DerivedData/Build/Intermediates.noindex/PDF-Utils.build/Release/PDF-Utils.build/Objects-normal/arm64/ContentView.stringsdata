@@ -4,18 +4,10 @@
     "Localizable": [
       {
         "comment": "",
-        "key": "エラー",
-        "location": {
-          "startingColumn": 13,
-          "startingLine": 179
-        }
-      },
-      {
-        "comment": "",
         "key": "PDFファイルをドラッグ&ドロップするか、ツールバーのファイル追加ボタンで選択してください",
         "location": {
           "startingColumn": 29,
-          "startingLine": 382
+          "startingLine": 418
         }
       },
       {
@@ -23,7 +15,7 @@
         "key": "結合完了通知",
         "location": {
           "startingColumn": 29,
-          "startingLine": 315
+          "startingLine": 351
         }
       },
       {
@@ -31,7 +23,7 @@
         "key": "分割完了通知",
         "location": {
           "startingColumn": 29,
-          "startingLine": 356
+          "startingLine": 392
         }
       },
       {
@@ -39,7 +31,7 @@
         "key": "モード",
         "location": {
           "startingColumn": 24,
-          "startingLine": 94
+          "startingLine": 102
         }
       },
       {
@@ -47,7 +39,7 @@
         "key": "動作モード切替",
         "location": {
           "startingColumn": 37,
-          "startingLine": 102
+          "startingLine": 110
         }
       },
       {
@@ -55,7 +47,7 @@
         "key": "結合",
         "location": {
           "startingColumn": 27,
-          "startingLine": 95
+          "startingLine": 103
         }
       },
       {
@@ -63,7 +55,7 @@
         "key": "分割",
         "location": {
           "startingColumn": 27,
-          "startingLine": 97
+          "startingLine": 105
         }
       },
       {
@@ -71,7 +63,7 @@
         "key": "PDFを結合",
         "location": {
           "startingColumn": 41,
-          "startingLine": 115
+          "startingLine": 123
         }
       },
       {
@@ -79,7 +71,7 @@
         "key": "%lldファイル",
         "location": {
           "startingColumn": 41,
-          "startingLine": 116
+          "startingLine": 124
         }
       },
       {
@@ -87,7 +79,7 @@
         "key": "PDFを分割",
         "location": {
           "startingColumn": 41,
-          "startingLine": 128
+          "startingLine": 136
         }
       },
       {
@@ -95,7 +87,7 @@
         "key": "結合",
         "location": {
           "startingColumn": 31,
-          "startingLine": 110
+          "startingLine": 118
         }
       },
       {
@@ -103,7 +95,55 @@
         "key": "分割",
         "location": {
           "startingColumn": 31,
-          "startingLine": 123
+          "startingLine": 131
+        }
+      },
+      {
+        "comment": "",
+        "key": "表示",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 144
+        }
+      },
+      {
+        "comment": "",
+        "key": "表示モード切替",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 152
+        }
+      },
+      {
+        "comment": "",
+        "key": "選択ファイルを上に移動",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "選択ファイルを下に移動",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 178
+        }
+      },
+      {
+        "comment": "",
+        "key": "ファイル",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 145
+        }
+      },
+      {
+        "comment": "",
+        "key": "ページ",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 147
         }
       },
       {
@@ -111,7 +151,23 @@
         "key": "ファイル追加",
         "location": {
           "startingColumn": 31,
-          "startingLine": 138
+          "startingLine": 158
+        }
+      },
+      {
+        "comment": "",
+        "key": "上に移動",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 167
+        }
+      },
+      {
+        "comment": "",
+        "key": "下に移動",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 175
         }
       },
       {
@@ -119,7 +175,7 @@
         "key": "削除",
         "location": {
           "startingColumn": 35,
-          "startingLine": 147
+          "startingLine": 183
         }
       },
       {
@@ -127,7 +183,7 @@
         "key": "全クリア",
         "location": {
           "startingColumn": 35,
-          "startingLine": 155
+          "startingLine": 191
         }
       },
       {
@@ -135,44 +191,20 @@
         "key": "OK",
         "location": {
           "startingColumn": 20,
-          "startingLine": 185
+          "startingLine": 217
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@\n\n%@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 221
         }
       },
       {
         "comment": "",
         "key": "結合の進捗",
-        "location": {
-          "startingColumn": 41,
-          "startingLine": 231
-        }
-      },
-      {
-        "comment": "",
-        "key": "%lldパーセント",
-        "location": {
-          "startingColumn": 41,
-          "startingLine": 232
-        }
-      },
-      {
-        "comment": "",
-        "key": "→ %lldファイル",
-        "location": {
-          "startingColumn": 26,
-          "startingLine": 254
-        }
-      },
-      {
-        "comment": "",
-        "key": "%@ · %lldページ",
-        "location": {
-          "startingColumn": 21,
-          "startingLine": 247
-        }
-      },
-      {
-        "comment": "",
-        "key": "分割の進捗",
         "location": {
           "startingColumn": 41,
           "startingLine": 267
@@ -188,10 +220,42 @@
       },
       {
         "comment": "",
+        "key": "→ %lldファイル",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 290
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %lldページ",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 283
+        }
+      },
+      {
+        "comment": "",
+        "key": "分割の進捗",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 303
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldパーセント",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 304
+        }
+      },
+      {
+        "comment": "",
         "key": "結合が完了しました",
         "location": {
           "startingColumn": 18,
-          "startingLine": 285
+          "startingLine": 321
         }
       },
       {
@@ -199,7 +263,7 @@
         "key": "Finderで表示",
         "location": {
           "startingColumn": 20,
-          "startingLine": 291
+          "startingLine": 327
         }
       },
       {
@@ -207,7 +271,7 @@
         "key": "バナーを閉じる",
         "location": {
           "startingColumn": 33,
-          "startingLine": 307
+          "startingLine": 343
         }
       },
       {
@@ -215,7 +279,7 @@
         "key": "%lldファイルに分割しました",
         "location": {
           "startingColumn": 18,
-          "startingLine": 326
+          "startingLine": 362
         }
       },
       {
@@ -223,7 +287,7 @@
         "key": "Finderで表示",
         "location": {
           "startingColumn": 20,
-          "startingLine": 332
+          "startingLine": 368
         }
       },
       {
@@ -231,7 +295,7 @@
         "key": "バナーを閉じる",
         "location": {
           "startingColumn": 33,
-          "startingLine": 348
+          "startingLine": 384
         }
       },
       {
@@ -239,7 +303,7 @@
         "key": "PDFファイルをここにドロップ",
         "location": {
           "startingColumn": 18,
-          "startingLine": 370
+          "startingLine": 406
         }
       },
       {
@@ -247,7 +311,7 @@
         "key": "またはファイル追加ボタンで選択",
         "location": {
           "startingColumn": 18,
-          "startingLine": 374
+          "startingLine": 410
         }
       }
     ]

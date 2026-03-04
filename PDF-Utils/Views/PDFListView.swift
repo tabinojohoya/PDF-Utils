@@ -9,22 +9,22 @@ import SwiftUI
 
 /// PDF一覧（左ペイン・サイドバー）
 struct PDFListView: View {
-    @Environment(PDFMergeViewModel.self) private var viewModel
+    @Environment(PDFWorkspaceViewModel.self) private var viewModel
 
     var body: some View {
         @Bindable var vm = viewModel
 
-        List(selection: $vm.selectedItemID) {
-            ForEach(viewModel.pdfItems) { item in
+        List(selection: $vm.merge.selectedItemID) {
+            ForEach(viewModel.merge.pdfItems) { item in
                 PDFListRowView(item: item)
                     .tag(item.id)
                     .accessibilityAction(named: "上に移動") {
-                        if let index = viewModel.pdfItems.firstIndex(where: { $0.id == item.id }), index > 0 {
+                        if let index = viewModel.merge.pdfItems.firstIndex(where: { $0.id == item.id }), index > 0 {
                             viewModel.moveItems(from: IndexSet(integer: index), to: index - 1)
                         }
                     }
                     .accessibilityAction(named: "下に移動") {
-                        if let index = viewModel.pdfItems.firstIndex(where: { $0.id == item.id }), index < viewModel.pdfItems.count - 1 {
+                        if let index = viewModel.merge.pdfItems.firstIndex(where: { $0.id == item.id }), index < viewModel.merge.pdfItems.count - 1 {
                             viewModel.moveItems(from: IndexSet(integer: index), to: index + 2)
                         }
                     }

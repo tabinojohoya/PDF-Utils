@@ -1,5 +1,5 @@
 {
-  "/Users/soma/Apps/PDF-Utils/PDF-Utils/Models/PageItem.swift" : {
+  "/Users/soma/Apps/PDF-Utils/PDF-Utils/Models/AppError.swift" : {
     "abi-baseline-json" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF_Utils.abi.json",
     "const-values" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF-Utils-primary.swiftconstvalues",
     "dependencies" : "/Users/soma/Apps/PDF-Utils/build/DerivedData/Build/Intermediates.noindex/PDF-Utils.build/Release/PDF-Utils.build/Objects-normal/arm64/PDF-Utils-primary.d",

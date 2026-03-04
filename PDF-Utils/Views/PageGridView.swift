@@ -9,7 +9,7 @@ import SwiftUI
 
 /// ページビュー — ファイルごとのセクション付きサムネイルグリッド
 struct PageGridView: View {
-    @Environment(PDFMergeViewModel.self) private var viewModel
+    @Environment(PDFWorkspaceViewModel.self) private var viewModel
 
     /// グリッドカラム定義（80pt幅のサムネイルを並べる）
     private let columns = [
@@ -19,7 +19,7 @@ struct PageGridView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(viewModel.pdfItems) { item in
+                ForEach(viewModel.merge.pdfItems) { item in
                     fileSection(for: item)
                 }
             }
@@ -55,7 +55,7 @@ struct PageGridView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
 
-                Text("\(viewModel.includedPageCount(for: item.id))/\(item.pageCount)ページ")
+                Text("\(viewModel.merge.includedPageCount(for: item.id))/\(item.pageCount)ページ")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -66,19 +66,19 @@ struct PageGridView: View {
             Button {
                 viewModel.toggleAllPages(for: item.id)
             } label: {
-                Image(systemName: viewModel.allPagesIncluded(for: item.id)
+                Image(systemName: viewModel.merge.allPagesIncluded(for: item.id)
                       ? "checkmark.square.fill"
-                      : (viewModel.includedPageCount(for: item.id) > 0
+                      : (viewModel.merge.includedPageCount(for: item.id) > 0
                          ? "minus.square.fill"
                          : "square"))
                     .font(.body)
                     .foregroundStyle(.blue)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(viewModel.allPagesIncluded(for: item.id)
+            .accessibilityLabel(viewModel.merge.allPagesIncluded(for: item.id)
                                 ? "全ページを除外"
                                 : "全ページを選択")
-            .disabled(viewModel.isMerging)
+            .disabled(viewModel.merge.isMerging)
         }
         .padding(.vertical, 4)
     }
@@ -90,14 +90,14 @@ struct PageGridView: View {
             ForEach(item.pages) { page in
                 PageThumbnailView(
                     page: page,
-                    isSelected: viewModel.selectedPageID == page.id,
+                    isSelected: viewModel.merge.selectedPageID == page.id,
                     onToggleInclusion: {
                         viewModel.togglePageInclusion(pageID: page.id)
                     },
                     onSelect: {
-                        viewModel.selectedPageID = page.id
+                        viewModel.merge.selectedPageID = page.id
                         // プレビュー連動: 親ファイルを選択
-                        viewModel.selectedItemID = item.id
+                        viewModel.merge.selectedItemID = item.id
                     }
                 )
                 .draggable(page.id.uuidString) {
@@ -126,11 +126,11 @@ struct PageGridView: View {
 
 /// 全ページ除外されたファイルがあるかチェックし、警告を表示するビュー
 struct ZeroPagesWarningView: View {
-    @Environment(PDFMergeViewModel.self) private var viewModel
+    @Environment(PDFWorkspaceViewModel.self) private var viewModel
 
     /// 全ページ除外されたファイルがあるか
     private var hasZeroPageFiles: Bool {
-        viewModel.pdfItems.contains { item in
+        viewModel.merge.pdfItems.contains { item in
             !item.pages.isEmpty && item.pages.allSatisfy { !$0.isIncluded }
         }
     }
