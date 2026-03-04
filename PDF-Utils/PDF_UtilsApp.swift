@@ -18,5 +18,21 @@ struct PDF_UtilsApp: App {
         }
         .defaultSize(width: 960, height: 640)
         .windowResizability(.contentMinSize)
+        .commands {
+            // 表示モード切替: ⌘1 → ファイルビュー, ⌘2 → ページビュー
+            CommandGroup(after: .toolbar) {
+                Button("ファイルビュー") {
+                    viewModel.merge.viewMode = .file
+                }
+                .keyboardShortcut("1", modifiers: .command)
+                .disabled(viewModel.appMode != .merge || viewModel.merge.isMerging)
+
+                Button("ページビュー") {
+                    viewModel.merge.viewMode = .page
+                }
+                .keyboardShortcut("2", modifiers: .command)
+                .disabled(viewModel.appMode != .merge || viewModel.merge.isMerging)
+            }
+        }
     }
 }
